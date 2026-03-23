@@ -22,3 +22,25 @@ Deze applicatie is gebouwd volgens een **Microservices Architectuur** om schaalb
 * **Databases:** MongoDB (voor Geospatial data) & PostgreSQL (voor relationele data)
 * **Storage:** Cloud Object Storage (voor het hosten van afbeeldingen via URL)
 * **Testing:** Postman
+
+---
+
+## Run met Docker
+
+Start de app vanuit de root van het project:
+
+```bash
+docker compose up --build
+```
+
+De applicatie is daarna bereikbaar op:
+
+```text
+http://localhost:3000
+```
+
+Stoppen:
+
+```bash
+docker compose down
+```

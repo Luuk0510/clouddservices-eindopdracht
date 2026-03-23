@@ -1,0 +1,10 @@
+services:
+  photo-prestige:
+    build:
+      context: ./photo-prestige
+    container_name: photo-prestige-front-end
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
