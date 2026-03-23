@@ -5,7 +5,8 @@ var authRouter = require('./auth');
 var targetRouter = require('./targets');
 var registerRouter = require('./register');
 var scoreRouter = require('./scores');
-var readRouter = require('./read');
+var myRegistrationsRouter = require('./my-registrations');
+var submissionsRouter = require('./submissions');
 
 router.get('/health', function(req, res) {
   res.status(200).json({
@@ -17,8 +18,9 @@ router.get('/health', function(req, res) {
 
 router.use('/auth', authRouter);
 router.use('/targets', targetRouter);
-router.use('/register', registerRouter);
-router.use('/scores', scoreRouter);
-router.use('/read', readRouter);
+router.use('/targets', registerRouter);
+router.use('/me', myRegistrationsRouter);
+router.use('/targets', scoreRouter);
+router.use('/submissions', submissionsRouter);
 
 module.exports = router;

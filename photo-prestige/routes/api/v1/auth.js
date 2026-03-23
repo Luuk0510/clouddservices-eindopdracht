@@ -15,18 +15,6 @@ router.post('/login', function(req, res) {
   });
 });
 
-router.post('/refresh', function(req, res) {
-  res.status(200).json({
-    message: 'Auth refresh endpoint'
-  });
-});
-
-router.post('/logout', function(req, res) {
-  res.status(200).json({
-    message: 'Auth logout endpoint'
-  });
-});
-
 router.get('/me', function(req, res) {
   res.status(200).json({
     message: 'Auth profile endpoint'

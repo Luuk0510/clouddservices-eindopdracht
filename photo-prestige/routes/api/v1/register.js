@@ -1,7 +1,7 @@
 var express = require('express');
 var router = express.Router();
 
-router.post('/targets/:targetId/join', function(req, res) {
+router.post('/:targetId/registrations', function(req, res) {
   res.status(201).json({
     message: 'Register participant on target endpoint',
     targetId: req.params.targetId,
@@ -9,16 +9,16 @@ router.post('/targets/:targetId/join', function(req, res) {
   });
 });
 
-router.delete('/targets/:targetId/leave', function(req, res) {
+router.get('/:targetId/participants', function(req, res) {
   res.status(200).json({
-    message: 'Unregister participant from target endpoint',
+    message: 'List participants for target endpoint',
     targetId: req.params.targetId
   });
 });
 
-router.get('/targets/:targetId/participants', function(req, res) {
+router.delete('/:targetId/registrations/me', function(req, res) {
   res.status(200).json({
-    message: 'List participants for target endpoint',
+    message: 'Delete my registration on target endpoint',
     targetId: req.params.targetId
   });
 });
