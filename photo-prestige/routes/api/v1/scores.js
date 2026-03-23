@@ -1,29 +1,24 @@
 var express = require('express');
 var router = express.Router();
 
-router.get('/me', function(req, res) {
-  res.status(200).json({
-    message: 'List my scores endpoint'
+router.post('/:targetId/submissions', function(req, res) {
+  res.status(201).json({
+    message: 'Create submission endpoint',
+    targetId: req.params.targetId,
+    body: req.body
   });
 });
 
-router.get('/targets/:targetId', function(req, res) {
+router.get('/:targetId/score', function(req, res) {
   res.status(200).json({
-    message: 'List target scores endpoint',
+    message: 'Get my score on target endpoint',
     targetId: req.params.targetId
   });
 });
 
-router.get('/submissions/:submissionId', function(req, res) {
+router.get('/:targetId/scores', function(req, res) {
   res.status(200).json({
-    message: 'Get submission score endpoint',
-    submissionId: req.params.submissionId
-  });
-});
-
-router.get('/targets/:targetId/winner', function(req, res) {
-  res.status(200).json({
-    message: 'Get target winner endpoint',
+    message: 'Get all scores on target endpoint',
     targetId: req.params.targetId
   });
 });

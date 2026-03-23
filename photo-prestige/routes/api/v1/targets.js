@@ -22,32 +22,9 @@ router.get('/:targetId', function(req, res) {
   });
 });
 
-router.patch('/:targetId', function(req, res) {
-  res.status(200).json({
-    message: 'Update target endpoint',
-    targetId: req.params.targetId,
-    body: req.body
-  });
-});
-
 router.delete('/:targetId', function(req, res) {
   res.status(200).json({
     message: 'Delete target endpoint',
-    targetId: req.params.targetId
-  });
-});
-
-router.post('/:targetId/votes', function(req, res) {
-  res.status(201).json({
-    message: 'Vote target endpoint',
-    targetId: req.params.targetId,
-    body: req.body
-  });
-});
-
-router.get('/:targetId/votes', function(req, res) {
-  res.status(200).json({
-    message: 'List target votes endpoint',
     targetId: req.params.targetId
   });
 });
