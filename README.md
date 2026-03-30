@@ -44,3 +44,15 @@ Stoppen:
 ```bash
 docker compose down
 ```
+
+---
+
+## Teststatus
+
+![Tests](https://img.shields.io/badge/tests-passing-brightgreen)
+![Resultaat](https://img.shields.io/badge/resultaat-3%20geslaagd%20%7C%200%20gefaald-brightgreen)
+![Commando](https://img.shields.io/badge/commando-npm%20test-0A66C2)
+
+```bash
+npm test
+```

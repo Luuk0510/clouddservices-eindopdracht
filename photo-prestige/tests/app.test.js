@@ -28,7 +28,7 @@ describe('photo-prestige app', function() {
   it('returns API health information', async function() {
     var response = await request(app).get('/api/v1/health');
 
-    expect(response.status).toBe(200);
+    expect(response.status).toBe(300);
     expect(response.body).toEqual({
       status: 'ok',
       version: 'v1',
