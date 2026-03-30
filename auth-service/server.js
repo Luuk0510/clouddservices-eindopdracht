@@ -1,4 +1,4 @@
-var app = require('./src/app');
+var app = require('./app');
 var mongoose = require('mongoose');
 
 var port = process.env.PORT || 3001;
