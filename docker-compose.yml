@@ -14,3 +14,16 @@ services:
       - SUBMISSION_SERVICE_URL=http://submission-service:3004
       - SCORE_SERVICE_URL=http://score-service:3005
       - READ_SERVICE_URL=http://read-service:3006
+
+  mongodb:
+    image: mongo:7
+    container_name: photo-prestige-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=photo-prestige
+    volumes:
+      - mongodb_data:/data/db
+
+volumes:
+  mongodb_data:
