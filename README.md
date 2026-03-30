@@ -50,7 +50,6 @@ docker compose down
 ## Teststatus
 
 [![Node CI](https://github.com/Luuk0510/clouddservices-eindopdracht/actions/workflows/node-ci.yml/badge.svg)](https://github.com/Luuk0510/clouddservices-eindopdracht/actions/workflows/node-ci.yml)
-![Commando](https://img.shields.io/badge/commando-npm%20test-0A66C2)
 
 ```bash
 npm test
