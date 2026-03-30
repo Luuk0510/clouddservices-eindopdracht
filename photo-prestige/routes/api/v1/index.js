@@ -1,12 +1,16 @@
 var express = require('express');
 var createProxyMiddleware = require('http-proxy-middleware').createProxyMiddleware;
+var fixRequestBody = require('http-proxy-middleware').fixRequestBody;
 var router = express.Router();
 
 function createServiceProxy(target) {
   return createProxyMiddleware({
     target: target,
     changeOrigin: true,
-    proxyTimeout: 5000
+    proxyTimeout: 5000,
+    on: {
+      proxyReq: fixRequestBody
+    }
   });
 }
 
