@@ -2,9 +2,15 @@ services:
   photo-prestige:
     build:
       context: ./photo-prestige
-    container_name: photo-prestige-front-end
+    container_name: photo-prestige-api-gateway
     ports:
       - "3000:3000"
     environment:
       - NODE_ENV=production
       - PORT=3000
+      - AUTH_SERVICE_URL=http://auth-service:3001
+      - TARGET_SERVICE_URL=http://target-service:3002
+      - REGISTER_SERVICE_URL=http://register-service:3003
+      - SUBMISSION_SERVICE_URL=http://submission-service:3004
+      - SCORE_SERVICE_URL=http://score-service:3005
+      - READ_SERVICE_URL=http://read-service:3006
