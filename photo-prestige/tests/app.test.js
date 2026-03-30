@@ -1,3 +1,19 @@
+jest.mock('http-proxy-middleware', function() {
+  return {
+    createProxyMiddleware: function(options) {
+      return function(req, res) {
+        res.status(200).json({
+          proxiedTo: options.target,
+          path: req.originalUrl,
+          method: req.method,
+          body: req.body
+        });
+      };
+    },
+    fixRequestBody: function() {}
+  };
+});
+
 var request = require('supertest');
 var app = require('../app');
 
@@ -16,11 +32,11 @@ describe('photo-prestige app', function() {
     expect(response.body).toEqual({
       status: 'ok',
       version: 'v1',
-      service: 'photo-prestige-api'
+      service: 'api-gateway'
     });
   });
 
-  it('returns a placeholder login response', async function() {
+  it('proxies login requests to the auth service', async function() {
     var payload = {
       email: 'test@example.com',
       password: 'secret'
@@ -31,7 +47,11 @@ describe('photo-prestige app', function() {
       .send(payload);
 
     expect(response.status).toBe(200);
-    expect(response.body.message).toBe('Auth login endpoint');
-    expect(response.body.body).toEqual(payload);
+    expect(response.body).toEqual({
+      proxiedTo: 'http://auth-service:3001',
+      path: '/api/v1/auth/login',
+      method: 'POST',
+      body: payload
+    });
   });
 });
