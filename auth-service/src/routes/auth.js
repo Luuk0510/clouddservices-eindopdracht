@@ -2,6 +2,7 @@ var express = require('express');
 var bcrypt = require('bcryptjs');
 var User = require('../models/User');
 var authenticate = require('../middleware/authenticate');
+var authorizeRole = require('../middleware/authorizeRole');
 var createToken = require('../utils/createToken');
 
 var router = express.Router();
@@ -94,6 +95,28 @@ router.get('/me', authenticate, function(req, res) {
       createdAt: req.user.createdAt
     }
   });
+});
+
+router.get('/users', authenticate, authorizeRole('target-owner'), async function(req, res) {
+  try {
+    var users = await User.find({}, 'email role createdAt').sort({ createdAt: -1 });
+
+    res.status(200).json({
+      users: users.map(function(user) {
+        return {
+          id: user._id,
+          email: user.email,
+          role: user.role,
+          createdAt: user.createdAt
+        };
+      })
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: 'Failed to load users',
+      error: error.message
+    });
+  }
 });
 
 module.exports = router;
