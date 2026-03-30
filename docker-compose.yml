@@ -2,9 +2,45 @@ services:
   photo-prestige:
     build:
       context: ./photo-prestige
-    container_name: photo-prestige-front-end
+    container_name: photo-prestige-api-gateway
+    depends_on:
+      - auth-service
     ports:
       - "3000:3000"
     environment:
       - NODE_ENV=production
       - PORT=3000
+      - AUTH_SERVICE_URL=http://auth-service:3001
+      - TARGET_SERVICE_URL=http://target-service:3002
+      - REGISTER_SERVICE_URL=http://register-service:3003
+      - SUBMISSION_SERVICE_URL=http://submission-service:3004
+      - SCORE_SERVICE_URL=http://score-service:3005
+      - READ_SERVICE_URL=http://read-service:3006
+
+  auth-service:
+    build:
+      context: ./auth-service
+    container_name: photo-prestige-auth-service
+    depends_on:
+      - mongodb
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - MONGODB_URI=mongodb://mongodb:27017/photo-prestige
+      - JWT_SECRET=change-this-in-real-deployments
+      - JWT_EXPIRES_IN=1d
+
+  mongodb:
+    image: mongo:7
+    container_name: photo-prestige-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=photo-prestige
+    volumes:
+      - mongodb_data:/data/db
+
+volumes:
+  mongodb_data:
