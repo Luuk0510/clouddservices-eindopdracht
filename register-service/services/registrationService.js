@@ -1,7 +1,5 @@
 var Registration = require('../models/Registration');
-var TargetRegistrationState = require('../models/TargetRegistrationState');
 var targetServiceClient = require('./targetServiceClient');
-var eventPublisher = require('./eventPublisher');
 var HttpError = require('../utils/HttpError');
 
 function serializeRegistration(registration) {
@@ -26,46 +24,17 @@ async function ensureTargetAllowsRegistration(targetId, authToken) {
     throw new HttpError(404, 'Target not found');
   }
 
-  var state = await TargetRegistrationState.findOne({ targetId: targetId });
   var deadline = new Date(target.deadline);
 
   if (Number.isNaN(deadline.getTime())) {
     throw new HttpError(502, 'Target service returned an invalid deadline');
   }
 
-  if (state && !state.isRegistrationOpen) {
-    throw new HttpError(409, 'Registration for this target is closed');
-  }
-
   if (target.status && ['closed', 'expired', 'archived', 'cancelled'].indexOf(String(target.status).toLowerCase()) !== -1) {
-    await TargetRegistrationState.findOneAndUpdate(
-      { targetId: targetId },
-      {
-        targetId: targetId,
-        isRegistrationOpen: false,
-        closedReason: 'manual-close',
-        closedAt: new Date(),
-        deadlineSnapshot: deadline
-      },
-      { upsert: true, new: true }
-    );
-
     throw new HttpError(409, 'Registration for this target is closed');
   }
 
   if (deadline.getTime() <= Date.now()) {
-    await TargetRegistrationState.findOneAndUpdate(
-      { targetId: targetId },
-      {
-        targetId: targetId,
-        isRegistrationOpen: false,
-        closedReason: 'deadline-reached',
-        closedAt: new Date(),
-        deadlineSnapshot: deadline
-      },
-      { upsert: true, new: true }
-    );
-
     throw new HttpError(409, 'Registration deadline has passed');
   }
 
@@ -98,20 +67,6 @@ exports.createRegistration = async function createRegistration(input) {
     targetDeadline: target.deadline,
     status: 'active'
   });
-
-  await TargetRegistrationState.findOneAndUpdate(
-    { targetId: input.targetId },
-    {
-      targetId: input.targetId,
-      isRegistrationOpen: true,
-      closedReason: null,
-      closedAt: null,
-      deadlineSnapshot: target.deadline
-    },
-    { upsert: true, new: true }
-  );
-
-  await eventPublisher.publishRegistrationCreated(registration);
 
   return {
     message: 'Registration created',
@@ -171,8 +126,6 @@ exports.cancelRegistration = async function cancelRegistration(input) {
   registration.status = 'cancelled';
   registration.cancelledAt = new Date();
   await registration.save();
-
-  await eventPublisher.publishRegistrationCancelled(registration);
 
   return {
     message: 'Registration cancelled',

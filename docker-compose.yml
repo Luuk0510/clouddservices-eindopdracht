@@ -47,8 +47,6 @@ services:
       - MONGODB_URI=mongodb://register-mongodb:27017/register-service
       - JWT_SECRET=change-this-in-real-deployments
       - TARGET_SERVICE_URL=http://target-service:3002
-      - TARGET_SERVICE_TIMEOUT_MS=5000
-      - EVENT_PUBLISHING_ENABLED=false
 
   mongodb:
     image: mongo:7
