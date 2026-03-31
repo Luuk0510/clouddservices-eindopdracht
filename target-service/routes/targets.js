@@ -33,7 +33,7 @@ function parseCoordinates(latValue, lngValue) {
   };
 }
 
-router.get('/targets', async function(req, res) {
+router.get('/', async function(req, res) {
   try {
     await closeExpiredTargets();
 
@@ -115,7 +115,7 @@ router.get('/targets', async function(req, res) {
   }
 });
 
-router.post('/targets', authenticate, authorizeRole('target-owner'), async function(req, res) {
+router.post('/', authenticate, authorizeRole('target-owner'), async function(req, res) {
   try {
     var requiredFields = ['title', 'imageUrl', 'lat', 'lng', 'deadlineAt'];
 
@@ -180,7 +180,7 @@ router.post('/targets', authenticate, authorizeRole('target-owner'), async funct
   }
 });
 
-router.get('/targets/:targetId', async function(req, res) {
+router.get('/:targetId', async function(req, res) {
   try {
     await closeExpiredTargets();
 
@@ -203,7 +203,7 @@ router.get('/targets/:targetId', async function(req, res) {
   }
 });
 
-router.patch('/targets/:targetId/deadline', authenticate, authorizeRole('target-owner'), async function(req, res) {
+router.patch('/:targetId/deadline', authenticate, authorizeRole('target-owner'), async function(req, res) {
   try {
     var target = await Target.findById(req.params.targetId);
 
@@ -243,7 +243,7 @@ router.patch('/targets/:targetId/deadline', authenticate, authorizeRole('target-
   }
 });
 
-router.delete('/targets/:targetId', authenticate, authorizeRole('target-owner'), async function(req, res) {
+router.delete('/:targetId', authenticate, authorizeRole('target-owner'), async function(req, res) {
   try {
     var target = await Target.findById(req.params.targetId);
 
