@@ -5,6 +5,7 @@ services:
     container_name: photo-prestige-api-gateway
     depends_on:
       - auth-service
+      - register-service
     ports:
       - "3000:3000"
     environment:
@@ -32,6 +33,23 @@ services:
       - JWT_SECRET=change-this-in-real-deployments
       - JWT_EXPIRES_IN=1d
 
+  register-service:
+    build:
+      context: ./register-service
+    container_name: photo-prestige-register-service
+    depends_on:
+      - register-mongodb
+    ports:
+      - "3003:3003"
+    environment:
+      - NODE_ENV=production
+      - PORT=3003
+      - MONGODB_URI=mongodb://register-mongodb:27017/register-service
+      - JWT_SECRET=change-this-in-real-deployments
+      - TARGET_SERVICE_URL=http://target-service:3002
+      - TARGET_SERVICE_TIMEOUT_MS=5000
+      - EVENT_PUBLISHING_ENABLED=false
+
   mongodb:
     image: mongo:7
     container_name: photo-prestige-mongodb
@@ -42,5 +60,16 @@ services:
     volumes:
       - mongodb_data:/data/db
 
+  register-mongodb:
+    image: mongo:7
+    container_name: photo-prestige-register-mongodb
+    ports:
+      - "27018:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=register-service
+    volumes:
+      - register_mongodb_data:/data/db
+
 volumes:
   mongodb_data:
+  register_mongodb_data:
