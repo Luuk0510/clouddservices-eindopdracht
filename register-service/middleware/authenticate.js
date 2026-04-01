@@ -23,6 +23,10 @@ module.exports = function authenticate(req, res, next) {
 
     next();
   } catch (error) {
+    if (error.statusCode) {
+      return next(error);
+    }
+
     next(new HttpError(401, 'Invalid token'));
   }
 };
