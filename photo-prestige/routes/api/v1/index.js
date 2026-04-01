@@ -34,9 +34,9 @@ router.use('/targets/:targetId/registrations', createServiceProxy(registerServic
 router.use('/targets/:targetId/participants', createServiceProxy(registerServiceUrl));
 router.use('/targets/:targetId/registrations/me', createServiceProxy(registerServiceUrl));
 router.use('/me/registrations', createServiceProxy(registerServiceUrl));
-router.use('/targets/:targetId/submissions', createServiceProxy(submissionServiceUrl));
-router.use('/submissions', createServiceProxy(submissionServiceUrl));
-router.use('/targets/:targetId/score', createServiceProxy(scoreServiceUrl));
+router.use('/targets/:targetId/submissions', createServiceProxy(targetServiceUrl));
+router.use('/submissions', createServiceProxy(targetServiceUrl));
+router.use('/targets/:targetId/score', createServiceProxy(targetServiceUrl));
 router.use('/targets/:targetId/scores', createServiceProxy(scoreServiceUrl));
 router.use('/read', createServiceProxy(readServiceUrl));
 router.use('/targets', createServiceProxy(targetServiceUrl));
