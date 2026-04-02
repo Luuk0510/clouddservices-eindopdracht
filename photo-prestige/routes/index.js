@@ -14,4 +14,8 @@ router.get('/register-demo', function(req, res, next) {
   res.render('register-demo', { title: 'Register Demo' });
 });
 
+router.get('/target-demo', function(req, res, next) {
+  res.render('target-demo', { title: 'Target Demo' });
+});
+
 module.exports = router;
