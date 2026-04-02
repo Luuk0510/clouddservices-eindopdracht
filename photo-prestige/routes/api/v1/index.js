@@ -4,14 +4,22 @@ var fixRequestBody = require('http-proxy-middleware').fixRequestBody;
 var router = express.Router();
 
 function createServiceProxy(target) {
-  return createProxyMiddleware({
+  var proxy = createProxyMiddleware({
     target: target,
     changeOrigin: true,
     proxyTimeout: 5000,
+    pathRewrite: function(path, req) {
+      return req._strippedPath || '/';
+    },
     on: {
       proxyReq: fixRequestBody
     }
   });
+
+  return function(req, res, next) {
+    req._strippedPath = req.url;
+    return proxy(req, res, next);
+  };
 }
 
 function createPreservedPathProxy(target) {
