@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= title %></title>
+    <link rel='stylesheet' href='/stylesheets/style.css' />
+  </head>
+  <body>
+    <main class="page">
+      <nav class="top-nav">
+        <a class="nav-link" href="/">Home</a>
+        <a class="nav-link" href="/auth-demo">Auth Demo</a>
+        <a class="nav-link" href="/register-demo">Register Demo</a>
+        <a class="nav-link active-link" href="/target-demo">Target Demo</a>
+      </nav>
+
+      <section class="hero">
+        <p class="eyebrow">Minimal Demo GUI</p>
+        <h1><%= title %></h1>
+        <p class="intro">Gebruik deze pagina om de Target service via de API Gateway te testen. Login eerst op de Auth Demo pagina zodat er een JWT in localStorage staat.</p>
+      </section>
+
+      <section class="card">
+        <div class="card-header">
+          <h2>Stored Token</h2>
+          <button id="clear-token-button" type="button">Clear token</button>
+        </div>
+        <pre id="token-result">Nog geen token gevonden.</pre>
+      </section>
+
+      <section class="grid">
+        <section class="card">
+          <h2>Targets lijst</h2>
+          <form id="targets-list-form">
+            <label for="list-city">Filter op stad (optioneel)</label>
+            <input id="list-city" name="city" type="text" placeholder="Den Bosch" />
+
+            <button type="submit">Haal targets op</button>
+          </form>
+          <pre id="targets-list-result">Nog geen request verstuurd.</pre>
+        </section>
+
+        <section class="card">
+          <h2>Maak target aan</h2>
+          <form id="target-create-form">
+            <label for="target-title">Titel</label>
+            <input id="target-title" name="title" type="text" placeholder="Bellende engel" required />
+
+            <label for="target-image-url">Image URL</label>
+            <input id="target-image-url" name="imageUrl" type="url" placeholder="https://..." required />
+
+            <label for="target-city">Stad</label>
+            <input id="target-city" name="city" type="text" placeholder="Den Bosch" />
+
+            <label for="target-lat">Latitude</label>
+            <input id="target-lat" name="lat" type="number" step="any" placeholder="51.6889" required />
+
+            <label for="target-lng">Longitude</label>
+            <input id="target-lng" name="lng" type="number" step="any" placeholder="5.3036" required />
+
+            <label for="target-radius">Radius (meters)</label>
+            <input id="target-radius" name="radiusMeters" type="number" min="1" value="250" required />
+
+            <label for="target-deadline">Deadline</label>
+            <input id="target-deadline" name="deadlineAt" type="datetime-local" required />
+
+            <button type="submit">Target aanmaken</button>
+          </form>
+          <pre id="target-create-result">Nog geen request verstuurd.</pre>
+        </section>
+
+        <section class="card">
+          <h2>Target detail / verwijderen</h2>
+          <form id="target-detail-form">
+            <label for="target-id">Target ID</label>
+            <input id="target-id" name="targetId" type="text" placeholder="Mongo ObjectId" required />
+
+            <div class="card-header">
+              <button id="target-get-button" type="submit">Detail ophalen</button>
+              <button id="target-delete-button" type="button">Verwijderen</button>
+            </div>
+          </form>
+          <pre id="target-detail-result">Nog geen request verstuurd.</pre>
+        </section>
+
+        <section class="card">
+          <h2>Deelnemer: upload &amp; score</h2>
+          <form id="participant-submission-form">
+            <label for="participant-target-id">Target ID</label>
+            <input id="participant-target-id" name="targetId" type="text" placeholder="Mongo ObjectId" required />
+
+            <label for="participant-image-url">Jouw foto URL (vergelijkbaar, niet exact dezelfde)</label>
+            <input id="participant-image-url" name="imageUrl" type="url" placeholder="https://..." required />
+
+            <div class="card-header">
+              <button type="submit">Upload als deelnemer</button>
+              <button id="participant-score-button" type="button">Mijn score ophalen</button>
+            </div>
+          </form>
+          <pre id="participant-submission-result">Nog geen request verstuurd.</pre>
+        </section>
+
+        <section class="card">
+          <h2>Deelnemer: eigen upload verwijderen</h2>
+          <form id="participant-delete-form">
+            <label for="participant-submission-id">Submission ID (uit upload-resultaat)</label>
+            <input id="participant-submission-id" name="submissionId" type="text" placeholder="Mongo ObjectId" required />
+
+            <button type="submit">Verwijder mijn upload</button>
+          </form>
+          <pre id="participant-delete-result">Nog geen request verstuurd.</pre>
+        </section>
+      </section>
+    </main>
+
+    <script>
+      function showJson(elementId, payload) {
+        document.getElementById(elementId).textContent = JSON.stringify(payload, null, 2);
+      }
+
+      function getToken() {
+        return localStorage.getItem('demo_jwt_token') || '';
+      }
+
+      function updateTokenView() {
+        const token = getToken();
+        if (!token) {
+          document.getElementById('token-result').textContent = 'Nog geen token gevonden. Login eerst op de Auth Demo pagina.';
+          return;
+        }
+        showJson('token-result', { token });
+      }
+
+      async function requestJson(url, options) {
+        const response = await fetch(url, options);
+        const text = await response.text();
+
+        try {
+          return {
+            status: response.status,
+            ok: response.ok,
+            body: JSON.parse(text)
+          };
+        } catch (error) {
+          return {
+            status: response.status,
+            ok: response.ok,
+            body: text
+          };
+        }
+      }
+
+      function buildAuthHeaders() {
+        const token = getToken();
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) {
+          headers.Authorization = 'Bearer ' + token;
+        }
+        return headers;
+      }
+
+      document.getElementById('clear-token-button').addEventListener('click', function() {
+        localStorage.removeItem('demo_jwt_token');
+        updateTokenView();
+      });
+
+      document.getElementById('targets-list-form').addEventListener('submit', async function(event) {
+        event.preventDefault();
+
+        const formData = new FormData(event.target);
+        const city = String(formData.get('city') || '').trim();
+        const query = city ? '?city=' + encodeURIComponent(city) : '';
+
+        try {
+          const result = await requestJson('/api/v1/targets' + query, { method: 'GET' });
+          showJson('targets-list-result', result);
+        } catch (error) {
+          showJson('targets-list-result', { error: error.message });
+        }
+      });
+
+      document.getElementById('target-create-form').addEventListener('submit', async function(event) {
+        event.preventDefault();
+
+        const formData = new FormData(event.target);
+        const deadlineInput = String(formData.get('deadlineAt') || '');
+        const deadlineAt = deadlineInput ? new Date(deadlineInput).toISOString() : null;
+
+        const payload = {
+          title: formData.get('title'),
+          imageUrl: formData.get('imageUrl'),
+          city: formData.get('city'),
+          lat: Number(formData.get('lat')),
+          lng: Number(formData.get('lng')),
+          radiusMeters: Number(formData.get('radiusMeters')),
+          deadlineAt: deadlineAt
+        };
+
+        try {
+          const result = await requestJson('/api/v1/targets', {
+            method: 'POST',
+            headers: buildAuthHeaders(),
+            body: JSON.stringify(payload)
+          });
+          showJson('target-create-result', result);
+        } catch (error) {
+          showJson('target-create-result', { error: error.message });
+        }
+      });
+
+      document.getElementById('target-detail-form').addEventListener('submit', async function(event) {
+        event.preventDefault();
+
+        const targetId = String(document.getElementById('target-id').value || '').trim();
+        if (!targetId) {
+          showJson('target-detail-result', { message: 'Target ID is verplicht.' });
+          return;
+        }
+
+        try {
+          const result = await requestJson('/api/v1/targets/' + encodeURIComponent(targetId), { method: 'GET' });
+          showJson('target-detail-result', result);
+        } catch (error) {
+          showJson('target-detail-result', { error: error.message });
+        }
+      });
+
+      document.getElementById('target-delete-button').addEventListener('click', async function() {
+        const targetId = String(document.getElementById('target-id').value || '').trim();
+        if (!targetId) {
+          showJson('target-detail-result', { message: 'Vul eerst een Target ID in.' });
+          return;
+        }
+
+        try {
+          const result = await requestJson('/api/v1/targets/' + encodeURIComponent(targetId), {
+            method: 'DELETE',
+            headers: buildAuthHeaders()
+          });
+          showJson('target-detail-result', result);
+        } catch (error) {
+          showJson('target-detail-result', { error: error.message });
+        }
+      });
+
+      document.getElementById('participant-submission-form').addEventListener('submit', async function(event) {
+        event.preventDefault();
+
+        const targetId = String(document.getElementById('participant-target-id').value || '').trim();
+        const imageUrl = String(document.getElementById('participant-image-url').value || '').trim();
+
+        if (!targetId || !imageUrl) {
+          showJson('participant-submission-result', { message: 'Target ID en image URL zijn verplicht.' });
+          return;
+        }
+
+        try {
+          const result = await requestJson('/api/v1/targets/' + encodeURIComponent(targetId) + '/submissions', {
+            method: 'POST',
+            headers: buildAuthHeaders(),
+            body: JSON.stringify({ imageUrl: imageUrl })
+          });
+
+          showJson('participant-submission-result', result);
+
+          if (result.ok && result.body && result.body.submission && result.body.submission._id) {
+            document.getElementById('participant-submission-id').value = result.body.submission._id;
+          }
+        } catch (error) {
+          showJson('participant-submission-result', { error: error.message });
+        }
+      });
+
+      document.getElementById('participant-score-button').addEventListener('click', async function() {
+        const targetId = String(document.getElementById('participant-target-id').value || '').trim();
+        if (!targetId) {
+          showJson('participant-submission-result', { message: 'Vul eerst een Target ID in.' });
+          return;
+        }
+
+        try {
+          const result = await requestJson('/api/v1/targets/' + encodeURIComponent(targetId) + '/score', {
+            method: 'GET',
+            headers: buildAuthHeaders()
+          });
+          showJson('participant-submission-result', result);
+        } catch (error) {
+          showJson('participant-submission-result', { error: error.message });
+        }
+      });
+
+      document.getElementById('participant-delete-form').addEventListener('submit', async function(event) {
+        event.preventDefault();
+
+        const submissionId = String(document.getElementById('participant-submission-id').value || '').trim();
+        if (!submissionId) {
+          showJson('participant-delete-result', { message: 'Submission ID is verplicht.' });
+          return;
+        }
+
+        try {
+          const result = await requestJson('/api/v1/submissions/' + encodeURIComponent(submissionId), {
+            method: 'DELETE',
+            headers: buildAuthHeaders()
+          });
+          showJson('participant-delete-result', result);
+        } catch (error) {
+          showJson('participant-delete-result', { error: error.message });
+        }
+      });
+
+      updateTokenView();
+    </script>
+  </body>
+</html>
