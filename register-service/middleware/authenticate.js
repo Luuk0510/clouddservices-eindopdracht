@@ -1,9 +1,9 @@
 var jwt = require('jsonwebtoken');
-var User = require('../models/User');
+
 var env = require('../config/env');
 var HttpError = require('../utils/HttpError');
 
-module.exports = async function authenticate(req, res, next) {
+module.exports = function authenticate(req, res, next) {
   try {
     var authHeader = req.get('Authorization');
 
@@ -13,20 +13,20 @@ module.exports = async function authenticate(req, res, next) {
 
     var token = authHeader.slice(7);
     var payload = jwt.verify(token, env.jwtSecret);
-    var user = await User.findById(payload.userId);
 
-    if (!user) {
-      throw new HttpError(401, 'User not found');
-    }
+    req.token = token;
+    req.user = {
+      userId: payload.userId,
+      email: payload.email,
+      role: payload.role
+    };
 
-    req.user = user;
-    req.auth = payload;
     next();
   } catch (error) {
     if (error.statusCode) {
       return next(error);
     }
 
-    return next(new HttpError(401, 'Invalid token'));
+    next(new HttpError(401, 'Invalid token'));
   }
 };

@@ -11,6 +11,30 @@ body {
   padding: 40px 20px 64px;
 }
 
+.top-nav {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.nav-link,
+.button-link {
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(28, 31, 35, 0.08);
+  border-radius: 999px;
+  color: #1c1f23;
+  display: inline-flex;
+  font-weight: 700;
+  padding: 10px 16px;
+  text-decoration: none;
+}
+
+.active-link {
+  background: #1e6f5c;
+  color: #fff;
+}
+
 .hero {
   margin-bottom: 24px;
 }
@@ -68,12 +92,17 @@ label {
 }
 
 input,
+textarea,
 select,
 button {
   border: 1px solid #cfd6dc;
   border-radius: 10px;
   font: inherit;
   padding: 10px 12px;
+}
+
+textarea {
+  resize: vertical;
 }
 
 button {
@@ -88,6 +117,16 @@ button:hover {
   background: #185a4b;
 }
 
+.button-link {
+  background: #1e6f5c;
+  border: none;
+  color: #fff;
+}
+
+.button-link:hover {
+  background: #185a4b;
+}
+
 pre {
   background: #10151b;
   border-radius: 12px;
@@ -97,4 +136,10 @@ pre {
   overflow-x: auto;
   padding: 14px;
   white-space: pre-wrap;
+}
+
+.helper-text {
+  color: #4e5761;
+  font-size: 14px;
+  margin-bottom: 0;
 }

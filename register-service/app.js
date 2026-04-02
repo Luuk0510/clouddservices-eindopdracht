@@ -1,7 +1,7 @@
 var express = require('express');
 var morgan = require('morgan');
 
-var authRoutes = require('./routes/authRoutes');
+var registerRoutes = require('./routes/registerRoutes');
 var errorHandler = require('./middleware/errorHandler');
 var notFoundHandler = require('./middleware/notFoundHandler');
 
@@ -11,7 +11,7 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-app.use('/', authRoutes);
+app.use(registerRoutes);
 app.use(notFoundHandler);
 app.use(errorHandler);
 

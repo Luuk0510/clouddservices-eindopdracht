@@ -14,6 +14,20 @@ function createServiceProxy(target) {
   });
 }
 
+function createPreservedPathProxy(target) {
+  return createProxyMiddleware({
+    target: target,
+    changeOrigin: true,
+    proxyTimeout: 5000,
+    pathRewrite: function(path, req) {
+      return req.originalUrl;
+    },
+    on: {
+      proxyReq: fixRequestBody
+    }
+  });
+}
+
 var authServiceUrl = process.env.AUTH_SERVICE_URL || 'http://auth-service:3001';
 var targetServiceUrl = process.env.TARGET_SERVICE_URL || 'http://target-service:3002';
 var registerServiceUrl = process.env.REGISTER_SERVICE_URL || 'http://register-service:3003';
@@ -30,14 +44,15 @@ router.get('/health', function(req, res) {
 });
 
 router.use('/auth', createServiceProxy(authServiceUrl));
-router.use('/targets/:targetId/registrations', createServiceProxy(registerServiceUrl));
-router.use('/targets/:targetId/participants', createServiceProxy(registerServiceUrl));
-router.use('/targets/:targetId/registrations/me', createServiceProxy(registerServiceUrl));
-router.use('/me/registrations', createServiceProxy(registerServiceUrl));
-router.use('/targets/:targetId/submissions', createServiceProxy(targetServiceUrl));
-router.use('/submissions', createServiceProxy(targetServiceUrl));
-router.use('/targets/:targetId/score', createServiceProxy(targetServiceUrl));
+router.use('/targets/:targetId/registrations', createPreservedPathProxy(registerServiceUrl));
+router.use('/targets/:targetId/participants', createPreservedPathProxy(registerServiceUrl));
+router.use('/targets/:targetId/registrations/me', createPreservedPathProxy(registerServiceUrl));
+router.use('/me/registrations', createPreservedPathProxy(registerServiceUrl));
+router.use('/targets/:targetId/submissions', createServiceProxy(submissionServiceUrl));
+router.use('/submissions', createServiceProxy(submissionServiceUrl));
+router.use('/targets/:targetId/score', createServiceProxy(scoreServiceUrl));
 router.use('/targets/:targetId/scores', createServiceProxy(scoreServiceUrl));
+router.use('/register', createPreservedPathProxy(registerServiceUrl));
 router.use('/read', createServiceProxy(readServiceUrl));
 router.use('/targets', createServiceProxy(targetServiceUrl));
 

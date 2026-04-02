@@ -3,19 +3,26 @@ name: Node CI
 on:
   push:
     branches:
-      - '**'
+      - main
+      - develop
   pull_request:
     branches:
       - main
       - develop
 
 jobs:
-  test-photo-prestige:
+  test-services:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - photo-prestige
+          - auth-service
+          - register-service
 
     defaults:
       run:
-        working-directory: photo-prestige
+        working-directory: ${{ matrix.service }}
 
     steps:
       - name: Check out repository
@@ -26,7 +33,7 @@ jobs:
         with:
           node-version: 20
           cache: npm
-          cache-dependency-path: photo-prestige/package-lock.json
+          cache-dependency-path: ${{ matrix.service }}/package-lock.json
 
       - name: Install dependencies
         run: npm install
