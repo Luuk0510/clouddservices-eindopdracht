@@ -6,17 +6,19 @@ function normalizeTarget(targetId, payload) {
     throw new HttpError(502, 'Target service returned an invalid response');
   }
 
+  var source = payload.target || payload;
+
   return {
-    targetId: payload.targetId || targetId,
-    ownerId: payload.ownerId,
-    deadline: payload.deadline,
-    status: payload.status
+    targetId: source.targetId || source._id || targetId,
+    ownerId: source.ownerId,
+    deadline: source.deadline || source.deadlineAt,
+    status: source.status
   };
 }
 
 exports.getTargetById = async function getTargetById(targetId, authToken) {
   try {
-    var response = await fetch(env.targetServiceUrl + '/api/v1/targets/' + encodeURIComponent(targetId), {
+    var response = await fetch(env.targetServiceUrl + '/' + encodeURIComponent(targetId), {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
