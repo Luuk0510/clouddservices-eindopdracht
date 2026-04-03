@@ -20,6 +20,7 @@ jobs:
           - auth-service
           - register-service
           - score-service
+          - target-service
 
     defaults:
       run:
