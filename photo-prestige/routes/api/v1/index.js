@@ -56,10 +56,11 @@ router.use('/targets/:targetId/registrations', createPreservedPathProxy(register
 router.use('/targets/:targetId/participants', createPreservedPathProxy(registerServiceUrl));
 router.use('/targets/:targetId/registrations/me', createPreservedPathProxy(registerServiceUrl));
 router.use('/me/registrations', createPreservedPathProxy(registerServiceUrl));
-router.use('/targets/:targetId/submissions', createServiceProxy(submissionServiceUrl));
-router.use('/submissions', createServiceProxy(submissionServiceUrl));
-router.use('/targets/:targetId/score', createServiceProxy(scoreServiceUrl));
-router.use('/targets/:targetId/scores', createServiceProxy(scoreServiceUrl));
+router.use('/targets/:targetId/submissions', createPreservedPathProxy(submissionServiceUrl));
+router.use('/submissions', createPreservedPathProxy(submissionServiceUrl));
+router.use('/targets/:targetId/score', createPreservedPathProxy(scoreServiceUrl));
+router.use('/targets/:targetId/scores', createPreservedPathProxy(scoreServiceUrl));
+router.use('/score', createPreservedPathProxy(scoreServiceUrl));
 router.use('/register', createPreservedPathProxy(registerServiceUrl));
 router.use('/read', createServiceProxy(readServiceUrl));
 router.use('/targets', createServiceProxy(targetServiceUrl));

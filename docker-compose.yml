@@ -7,6 +7,7 @@ services:
       - auth-service
       - target-service
       - register-service
+      - score-service
     ports:
       - "3000:3000"
     environment:
@@ -15,7 +16,7 @@ services:
       - AUTH_SERVICE_URL=http://auth-service:3001
       - TARGET_SERVICE_URL=http://target-service:3002
       - REGISTER_SERVICE_URL=http://register-service:3003
-      - SUBMISSION_SERVICE_URL=http://submission-service:3004
+      - SUBMISSION_SERVICE_URL=http://score-service:3005
       - SCORE_SERVICE_URL=http://score-service:3005
       - READ_SERVICE_URL=http://read-service:3006
 
@@ -63,6 +64,24 @@ services:
       - JWT_SECRET=change-this-in-real-deployments
       - TARGET_SERVICE_URL=http://target-service:3002
 
+  score-service:
+    build:
+      context: ./score-service
+    container_name: photo-prestige-score-service
+    depends_on:
+      - score-mongodb
+      - target-service
+    env_file:
+      - ./score-service/.env
+    ports:
+      - "3005:3005"
+    environment:
+      - NODE_ENV=production
+      - PORT=3005
+      - MONGODB_URI=mongodb://score-mongodb:27017/score-service
+      - JWT_SECRET=change-this-in-real-deployments
+      - TARGET_SERVICE_URL=http://target-service:3002
+
   mongodb:
     image: mongo:7
     container_name: photo-prestige-mongodb
@@ -83,6 +102,17 @@ services:
     volumes:
       - register_mongodb_data:/data/db
 
+  score-mongodb:
+    image: mongo:7
+    container_name: photo-prestige-score-mongodb
+    ports:
+      - "27019:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=score-service
+    volumes:
+      - score_mongodb_data:/data/db
+
 volumes:
   mongodb_data:
   register_mongodb_data:
+  score_mongodb_data:
