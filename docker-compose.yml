@@ -16,9 +16,7 @@ services:
       - AUTH_SERVICE_URL=http://auth-service:3001
       - TARGET_SERVICE_URL=http://target-service:3002
       - REGISTER_SERVICE_URL=http://register-service:3003
-      - SUBMISSION_SERVICE_URL=http://score-service:3005
       - SCORE_SERVICE_URL=http://score-service:3005
-      - READ_SERVICE_URL=http://read-service:3006
 
   auth-service:
     build:

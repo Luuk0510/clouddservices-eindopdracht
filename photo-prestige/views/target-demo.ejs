@@ -82,34 +82,6 @@
           </form>
           <pre id="target-detail-result">Nog geen request verstuurd.</pre>
         </section>
-
-        <section class="card">
-          <h2>Deelnemer: upload &amp; score</h2>
-          <form id="participant-submission-form">
-            <label for="participant-target-id">Target ID</label>
-            <input id="participant-target-id" name="targetId" type="text" placeholder="Mongo ObjectId" required />
-
-            <label for="participant-image-url">Jouw foto URL (vergelijkbaar, niet exact dezelfde)</label>
-            <input id="participant-image-url" name="imageUrl" type="url" placeholder="https://..." required />
-
-            <div class="card-header">
-              <button type="submit">Upload als deelnemer</button>
-              <button id="participant-score-button" type="button">Mijn score ophalen</button>
-            </div>
-          </form>
-          <pre id="participant-submission-result">Nog geen request verstuurd.</pre>
-        </section>
-
-        <section class="card">
-          <h2>Deelnemer: eigen upload verwijderen</h2>
-          <form id="participant-delete-form">
-            <label for="participant-submission-id">Submission ID (uit upload-resultaat)</label>
-            <input id="participant-submission-id" name="submissionId" type="text" placeholder="Mongo ObjectId" required />
-
-            <button type="submit">Verwijder mijn upload</button>
-          </form>
-          <pre id="participant-delete-result">Nog geen request verstuurd.</pre>
-        </section>
       </section>
     </main>
 
@@ -240,72 +212,6 @@
           showJson('target-detail-result', result);
         } catch (error) {
           showJson('target-detail-result', { error: error.message });
-        }
-      });
-
-      document.getElementById('participant-submission-form').addEventListener('submit', async function(event) {
-        event.preventDefault();
-
-        const targetId = String(document.getElementById('participant-target-id').value || '').trim();
-        const imageUrl = String(document.getElementById('participant-image-url').value || '').trim();
-
-        if (!targetId || !imageUrl) {
-          showJson('participant-submission-result', { message: 'Target ID en image URL zijn verplicht.' });
-          return;
-        }
-
-        try {
-          const result = await requestJson('/api/v1/targets/' + encodeURIComponent(targetId) + '/submissions', {
-            method: 'POST',
-            headers: buildAuthHeaders(),
-            body: JSON.stringify({ imageUrl: imageUrl })
-          });
-
-          showJson('participant-submission-result', result);
-
-          if (result.ok && result.body && result.body.submission && result.body.submission._id) {
-            document.getElementById('participant-submission-id').value = result.body.submission._id;
-          }
-        } catch (error) {
-          showJson('participant-submission-result', { error: error.message });
-        }
-      });
-
-      document.getElementById('participant-score-button').addEventListener('click', async function() {
-        const targetId = String(document.getElementById('participant-target-id').value || '').trim();
-        if (!targetId) {
-          showJson('participant-submission-result', { message: 'Vul eerst een Target ID in.' });
-          return;
-        }
-
-        try {
-          const result = await requestJson('/api/v1/targets/' + encodeURIComponent(targetId) + '/score', {
-            method: 'GET',
-            headers: buildAuthHeaders()
-          });
-          showJson('participant-submission-result', result);
-        } catch (error) {
-          showJson('participant-submission-result', { error: error.message });
-        }
-      });
-
-      document.getElementById('participant-delete-form').addEventListener('submit', async function(event) {
-        event.preventDefault();
-
-        const submissionId = String(document.getElementById('participant-submission-id').value || '').trim();
-        if (!submissionId) {
-          showJson('participant-delete-result', { message: 'Submission ID is verplicht.' });
-          return;
-        }
-
-        try {
-          const result = await requestJson('/api/v1/submissions/' + encodeURIComponent(submissionId), {
-            method: 'DELETE',
-            headers: buildAuthHeaders()
-          });
-          showJson('participant-delete-result', result);
-        } catch (error) {
-          showJson('participant-delete-result', { error: error.message });
         }
       });
 
