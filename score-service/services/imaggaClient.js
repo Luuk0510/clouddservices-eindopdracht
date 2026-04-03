@@ -7,6 +7,10 @@ function createBasicAuthHeader() {
 }
 
 exports.fetchTagsForImage = async function fetchTagsForImage(imageUrl) {
+  if (!env.imaggaApiKey || !env.imaggaApiSecret) {
+    throw new HttpError(503, 'Imagga credentials are missing');
+  }
+
   try {
     var response = await fetch(
       env.imaggaApiBaseUrl + '/tags?image_url=' + encodeURIComponent(imageUrl),

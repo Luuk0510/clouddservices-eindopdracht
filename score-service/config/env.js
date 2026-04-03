@@ -5,6 +5,5 @@ module.exports = {
   targetServiceUrl: process.env.TARGET_SERVICE_URL || 'http://target-service:3002',
   imaggaApiKey: process.env.IMAGGA_API_KEY || '',
   imaggaApiSecret: process.env.IMAGGA_API_SECRET || '',
-  imaggaApiBaseUrl: process.env.IMAGGA_API_BASE_URL || 'https://api.imagga.com/v2',
-  imaggaEnabled: Boolean(process.env.IMAGGA_API_KEY && process.env.IMAGGA_API_SECRET)
+  imaggaApiBaseUrl: process.env.IMAGGA_API_BASE_URL || 'https://api.imagga.com/v2'
 };

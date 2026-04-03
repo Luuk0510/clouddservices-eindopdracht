@@ -8,37 +8,6 @@ function normalizeImageUrl(value) {
   return String(value || '').trim().toLowerCase();
 }
 
-function getUrlTokens(imageUrl) {
-  return normalizeImageUrl(imageUrl).split(/[^a-z0-9]+/).filter(Boolean);
-}
-
-function calculateFallbackScore(targetUrl, submissionUrl) {
-  var targetTokens = getUrlTokens(targetUrl);
-  var submissionTokens = getUrlTokens(submissionUrl);
-
-  if (!targetTokens.length || !submissionTokens.length) {
-    return 0;
-  }
-
-  var targetSet = new Set(targetTokens);
-  var submissionSet = new Set(submissionTokens);
-  var sharedCount = 0;
-
-  submissionSet.forEach(function(token) {
-    if (targetSet.has(token)) {
-      sharedCount += 1;
-    }
-  });
-
-  var unionCount = targetSet.size + submissionSet.size - sharedCount;
-
-  if (unionCount <= 0) {
-    return 0;
-  }
-
-  return Math.round((sharedCount / unionCount) * 100);
-}
-
 function calculateTagSimilarityScore(targetTags, submissionTags) {
   var limit = 10;
   var submissionMap = {};
@@ -65,10 +34,6 @@ function calculateTagSimilarityScore(targetTags, submissionTags) {
 }
 
 async function calculateScore(targetUrl, submissionUrl) {
-  if (!env.imaggaEnabled) {
-    return calculateFallbackScore(targetUrl, submissionUrl);
-  }
-
   var targetTags = await imaggaClient.fetchTagsForImage(targetUrl);
   var submissionTags = await imaggaClient.fetchTagsForImage(submissionUrl);
 
