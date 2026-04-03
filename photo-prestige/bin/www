@@ -7,6 +7,7 @@
 var app = require('../app');
 var debug = require('debug')('photo-prestige:server');
 var http = require('http');
+var logger = require('../utils/logger');
 
 /**
  * Get port from environment and store in Express.
@@ -67,11 +68,15 @@ function onError(error) {
   // handle specific listen errors with friendly messages
   switch (error.code) {
     case 'EACCES':
-      console.error(bind + ' requires elevated privileges');
+      logger.error('server.start_failed', {
+        message: bind + ' requires elevated privileges'
+      });
       process.exit(1);
       break;
     case 'EADDRINUSE':
-      console.error(bind + ' is already in use');
+      logger.error('server.start_failed', {
+        message: bind + ' is already in use'
+      });
       process.exit(1);
       break;
     default:
@@ -88,11 +93,16 @@ function onListening() {
   var bind = typeof addr === 'string'
     ? 'pipe ' + addr
     : 'port ' + addr.port;
+  logger.info('server.started', {
+    port: typeof addr === 'string' ? addr : addr.port
+  });
   debug('Listening on ' + bind);
 }
 
 function shutdown() {
+  logger.info('server.stopping');
   server.close(function() {
+    logger.info('server.stopped');
     process.exit(0);
   });
 }
