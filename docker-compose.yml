@@ -9,14 +9,14 @@ services:
       - register-service
       - score-service
     ports:
-      - "3000:3000"
+      - "${GATEWAY_PORT:-3000}:3000"
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=${NODE_ENV:-production}
       - PORT=3000
-      - AUTH_SERVICE_URL=http://auth-service:3001
-      - TARGET_SERVICE_URL=http://target-service:3002
-      - REGISTER_SERVICE_URL=http://register-service:3003
-      - SCORE_SERVICE_URL=http://score-service:3005
+      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL:-http://auth-service:3001}
+      - TARGET_SERVICE_URL=${TARGET_SERVICE_URL:-http://target-service:3002}
+      - REGISTER_SERVICE_URL=${REGISTER_SERVICE_URL:-http://register-service:3003}
+      - SCORE_SERVICE_URL=${SCORE_SERVICE_URL:-http://score-service:3005}
 
   auth-service:
     build:
@@ -25,13 +25,13 @@ services:
     depends_on:
       - mongodb
     ports:
-      - "3001:3001"
+      - "${AUTH_SERVICE_PORT:-3001}:3001"
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=${NODE_ENV:-production}
       - PORT=3001
-      - MONGODB_URI=mongodb://mongodb:27017/photo-prestige
-      - JWT_SECRET=change-this-in-real-deployments
-      - JWT_EXPIRES_IN=1d
+      - MONGODB_URI=${AUTH_MONGODB_URI:-mongodb://mongodb:27017/photo-prestige}
+      - JWT_SECRET=${JWT_SECRET:-change-this-in-real-deployments}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-1d}
 
   target-service:
     build:
@@ -40,12 +40,12 @@ services:
     depends_on:
       - mongodb
     ports:
-      - "3002:3002"
+      - "${TARGET_SERVICE_PORT:-3002}:3002"
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=${NODE_ENV:-production}
       - PORT=3002
-      - MONGODB_URI=mongodb://mongodb:27017/photo-prestige
-      - JWT_SECRET=change-this-in-real-deployments
+      - MONGODB_URI=${TARGET_MONGODB_URI:-mongodb://mongodb:27017/photo-prestige}
+      - JWT_SECRET=${JWT_SECRET:-change-this-in-real-deployments}
 
   register-service:
     build:
@@ -54,13 +54,13 @@ services:
     depends_on:
       - register-mongodb
     ports:
-      - "3003:3003"
+      - "${REGISTER_SERVICE_PORT:-3003}:3003"
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=${NODE_ENV:-production}
       - PORT=3003
-      - MONGODB_URI=mongodb://register-mongodb:27017/register-service
-      - JWT_SECRET=change-this-in-real-deployments
-      - TARGET_SERVICE_URL=http://target-service:3002
+      - MONGODB_URI=${REGISTER_MONGODB_URI:-mongodb://register-mongodb:27017/register-service}
+      - JWT_SECRET=${JWT_SECRET:-change-this-in-real-deployments}
+      - TARGET_SERVICE_URL=${TARGET_SERVICE_URL:-http://target-service:3002}
 
   score-service:
     build:
@@ -69,16 +69,17 @@ services:
     depends_on:
       - score-mongodb
       - target-service
-    env_file:
-      - ./score-service/.env
     ports:
-      - "3005:3005"
+      - "${SCORE_SERVICE_PORT:-3005}:3005"
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=${NODE_ENV:-production}
       - PORT=3005
-      - MONGODB_URI=mongodb://score-mongodb:27017/score-service
-      - JWT_SECRET=change-this-in-real-deployments
-      - TARGET_SERVICE_URL=http://target-service:3002
+      - MONGODB_URI=${SCORE_MONGODB_URI:-mongodb://score-mongodb:27017/score-service}
+      - JWT_SECRET=${JWT_SECRET:-change-this-in-real-deployments}
+      - TARGET_SERVICE_URL=${TARGET_SERVICE_URL:-http://target-service:3002}
+      - IMAGGA_API_KEY=${IMAGGA_API_KEY:-}
+      - IMAGGA_API_SECRET=${IMAGGA_API_SECRET:-}
+      - IMAGGA_API_BASE_URL=${IMAGGA_API_BASE_URL:-https://api.imagga.com/v2}
 
   mongodb:
     image: mongo:7
