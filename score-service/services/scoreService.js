@@ -5,7 +5,7 @@ var targetServiceClient = require('./targetServiceClient');
 var HttpError = require('../utils/HttpError');
 
 function normalizeImageUrl(value) {
-  return String(value || '').trim().toLowerCase();
+  return String(value || '').trim();
 }
 
 function calculateTagSimilarityScore(targetTags, submissionTags) {
