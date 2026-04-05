@@ -6,8 +6,24 @@ var logger = require('./utils/logger');
 var rabbitmq = require('./utils/rabbitmq');
 
 connectDatabase(env.mongoUri).then(function() {
-  // Verbind met RabbitMQ na DB-connectie (niet-blokkerend: fout wordt intern afgehandeld)
-  rabbitmq.connect();
+  rabbitmq.connect().then(function() {
+    rabbitmq.subscribe(
+      'register-service.registration.created',
+      'registration.created',
+      function(message) {
+        logger.info('rabbitmq.received', {
+          routingKey: 'registration.created',
+          targetId: message.targetId,
+          userId: message.userId,
+          userEmail: message.userEmail
+        });
+      }
+    ).catch(function(error) {
+      logger.error('rabbitmq.subscribe_failed', { message: error.message });
+    });
+  }).catch(function() {
+    // connect mislukt – reconnect wordt intern afgehandeld door rabbitmq util
+  });
 
   var server = app.listen(env.port, function() {
     logger.info('server.started', { port: env.port });
