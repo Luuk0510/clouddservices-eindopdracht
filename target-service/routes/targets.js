@@ -35,7 +35,7 @@ function parseCoordinates(latValue, lngValue) {
 }
 
 function normalizeImageUrl(value) {
-  return String(value || '').trim().toLowerCase();
+  return String(value || '').trim();
 }
 
 function calculateSimilarityScore(targetUrl, submissionUrl) {
