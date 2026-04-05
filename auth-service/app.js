@@ -1,13 +1,13 @@
 var express = require('express');
-var morgan = require('morgan');
 
 var authRoutes = require('./routes/authRoutes');
 var errorHandler = require('./middleware/errorHandler');
 var notFoundHandler = require('./middleware/notFoundHandler');
+var logger = require('./utils/logger');
 
 var app = express();
 
-app.use(morgan('dev'));
+app.use(logger.requestLogger);
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 

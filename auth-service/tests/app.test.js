@@ -22,8 +22,33 @@ describe('auth-service app', function() {
     expect(response.body.error.message).toBe('Email and password are required');
   });
 
+  it('validates login payload', async function() {
+    var response = await request(app)
+      .post('/login')
+      .send({});
+
+    expect(response.status).toBe(400);
+    expect(response.body.error.message).toBe('Email and password are required');
+  });
+
   it('requires a bearer token for profile requests', async function() {
     var response = await request(app).get('/me');
+
+    expect(response.status).toBe(401);
+    expect(response.body.error.message).toBe('Missing bearer token');
+  });
+
+  it('rejects invalid bearer tokens for profile requests', async function() {
+    var response = await request(app)
+      .get('/me')
+      .set('Authorization', 'Bearer fake-token');
+
+    expect(response.status).toBe(401);
+    expect(response.body.error.message).toBe('Invalid token');
+  });
+
+  it('requires a bearer token for users listing', async function() {
+    var response = await request(app).get('/users');
 
     expect(response.status).toBe(401);
     expect(response.body.error.message).toBe('Missing bearer token');
