@@ -19,6 +19,8 @@ jobs:
           - photo-prestige
           - auth-service
           - register-service
+          - score-service
+          - target-service
 
     defaults:
       run:

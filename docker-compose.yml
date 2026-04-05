@@ -7,17 +7,16 @@ services:
       - auth-service
       - target-service
       - register-service
+      - score-service
     ports:
-      - "3000:3000"
+      - "${GATEWAY_PORT:-3000}:3000"
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=${NODE_ENV:-production}
       - PORT=3000
-      - AUTH_SERVICE_URL=http://auth-service:3001
-      - TARGET_SERVICE_URL=http://target-service:3002
-      - REGISTER_SERVICE_URL=http://register-service:3003
-      - SUBMISSION_SERVICE_URL=http://submission-service:3004
-      - SCORE_SERVICE_URL=http://score-service:3005
-      - READ_SERVICE_URL=http://read-service:3006
+      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL:-http://auth-service:3001}
+      - TARGET_SERVICE_URL=${TARGET_SERVICE_URL:-http://target-service:3002}
+      - REGISTER_SERVICE_URL=${REGISTER_SERVICE_URL:-http://register-service:3003}
+      - SCORE_SERVICE_URL=${SCORE_SERVICE_URL:-http://score-service:3005}
 
   auth-service:
     build:
@@ -26,13 +25,13 @@ services:
     depends_on:
       - mongodb
     ports:
-      - "3001:3001"
+      - "${AUTH_SERVICE_PORT:-3001}:3001"
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=${NODE_ENV:-production}
       - PORT=3001
-      - MONGODB_URI=mongodb://mongodb:27017/photo-prestige
-      - JWT_SECRET=change-this-in-real-deployments
-      - JWT_EXPIRES_IN=1d
+      - MONGODB_URI=${AUTH_MONGODB_URI:-mongodb://mongodb:27017/photo-prestige}
+      - JWT_SECRET=${JWT_SECRET:-change-this-in-real-deployments}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-1d}
 
   target-service:
     build:
@@ -41,12 +40,12 @@ services:
     depends_on:
       - mongodb
     ports:
-      - "3002:3002"
+      - "${TARGET_SERVICE_PORT:-3002}:3002"
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=${NODE_ENV:-production}
       - PORT=3002
-      - MONGODB_URI=mongodb://mongodb:27017/photo-prestige
-      - JWT_SECRET=change-this-in-real-deployments
+      - MONGODB_URI=${TARGET_MONGODB_URI:-mongodb://mongodb:27017/photo-prestige}
+      - JWT_SECRET=${JWT_SECRET:-change-this-in-real-deployments}
 
   register-service:
     build:
@@ -56,14 +55,33 @@ services:
       - register-mongodb
       - rabbitmq
     ports:
-      - "3003:3003"
+      - "${REGISTER_SERVICE_PORT:-3003}:3003"
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=${NODE_ENV:-production}
       - PORT=3003
-      - MONGODB_URI=mongodb://register-mongodb:27017/register-service
-      - JWT_SECRET=change-this-in-real-deployments
-      - TARGET_SERVICE_URL=http://target-service:3002
-      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+      - MONGODB_URI=${REGISTER_MONGODB_URI:-mongodb://register-mongodb:27017/register-service}
+      - JWT_SECRET=${JWT_SECRET:-change-this-in-real-deployments}
+      - TARGET_SERVICE_URL=${TARGET_SERVICE_URL:-http://target-service:3002}
+      - RABBITMQ_URL=${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672}
+
+  score-service:
+    build:
+      context: ./score-service
+    container_name: photo-prestige-score-service
+    depends_on:
+      - score-mongodb
+      - target-service
+    ports:
+      - "${SCORE_SERVICE_PORT:-3005}:3005"
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - PORT=3005
+      - MONGODB_URI=${SCORE_MONGODB_URI:-mongodb://score-mongodb:27017/score-service}
+      - JWT_SECRET=${JWT_SECRET:-change-this-in-real-deployments}
+      - TARGET_SERVICE_URL=${TARGET_SERVICE_URL:-http://target-service:3002}
+      - IMAGGA_API_KEY=${IMAGGA_API_KEY:-}
+      - IMAGGA_API_SECRET=${IMAGGA_API_SECRET:-}
+      - IMAGGA_API_BASE_URL=${IMAGGA_API_BASE_URL:-https://api.imagga.com/v2}
 
   mongodb:
     image: mongo:7
@@ -85,6 +103,16 @@ services:
     volumes:
       - register_mongodb_data:/data/db
 
+  score-mongodb:
+    image: mongo:7
+    container_name: photo-prestige-score-mongodb
+    ports:
+      - "27019:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=score-service
+    volumes:
+      - score_mongodb_data:/data/db
+
   rabbitmq:
     image: rabbitmq:3-management
     container_name: photo-prestige-rabbitmq
@@ -105,4 +133,5 @@ services:
 volumes:
   mongodb_data:
   register_mongodb_data:
+  score_mongodb_data:
   rabbitmq_data:

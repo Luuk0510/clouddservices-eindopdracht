@@ -14,6 +14,10 @@ router.get('/register-demo', function(req, res, next) {
   res.render('register-demo', { title: 'Register Demo' });
 });
 
+router.get('/score-demo', function(req, res, next) {
+  res.render('score-demo', { title: 'Score Demo' });
+});
+
 router.get('/target-demo', function(req, res, next) {
   res.render('target-demo', { title: 'Target Demo' });
 });

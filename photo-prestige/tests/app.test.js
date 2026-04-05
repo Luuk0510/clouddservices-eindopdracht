@@ -25,6 +25,34 @@ describe('photo-prestige app', function() {
     expect(response.text).toContain('Photo Prestige');
   });
 
+  it('renders the auth demo page', async function() {
+    var response = await request(app).get('/auth-demo');
+
+    expect(response.status).toBe(200);
+    expect(response.text).toContain('Auth Demo');
+  });
+
+  it('renders the register demo page', async function() {
+    var response = await request(app).get('/register-demo');
+
+    expect(response.status).toBe(200);
+    expect(response.text).toContain('Register Demo');
+  });
+
+  it('renders the score demo page', async function() {
+    var response = await request(app).get('/score-demo');
+
+    expect(response.status).toBe(200);
+    expect(response.text).toContain('Score Demo');
+  });
+
+  it('renders the target demo page', async function() {
+    var response = await request(app).get('/target-demo');
+
+    expect(response.status).toBe(200);
+    expect(response.text).toContain('Target Demo');
+  });
+
   it('returns API health information', async function() {
     var response = await request(app).get('/api/v1/health');
 
@@ -53,5 +81,51 @@ describe('photo-prestige app', function() {
       method: 'POST',
       body: payload
     });
+  });
+
+  it('proxies registration routes to the register service', async function() {
+    var response = await request(app)
+      .get('/api/v1/me/registrations');
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      proxiedTo: 'http://register-service:3003',
+      path: '/api/v1/me/registrations',
+      method: 'GET',
+      body: {}
+    });
+  });
+
+  it('proxies score routes to the score service', async function() {
+    var response = await request(app)
+      .get('/api/v1/targets/target-123/score');
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      proxiedTo: 'http://score-service:3005',
+      path: '/api/v1/targets/target-123/score',
+      method: 'GET',
+      body: {}
+    });
+  });
+
+  it('proxies target routes to the target service', async function() {
+    var response = await request(app)
+      .get('/api/v1/targets');
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      proxiedTo: 'http://target-service:3002',
+      path: '/api/v1/targets',
+      method: 'GET',
+      body: {}
+    });
+  });
+
+  it('renders the error page for unknown routes', async function() {
+    var response = await request(app).get('/this-route-does-not-exist');
+
+    expect(response.status).toBe(404);
+    expect(response.text).toContain('Not Found');
   });
 });
