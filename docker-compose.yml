@@ -54,6 +54,7 @@ services:
     container_name: photo-prestige-register-service
     depends_on:
       - register-mongodb
+      - rabbitmq
     ports:
       - "3003:3003"
     environment:
@@ -62,6 +63,7 @@ services:
       - MONGODB_URI=mongodb://register-mongodb:27017/register-service
       - JWT_SECRET=change-this-in-real-deployments
       - TARGET_SERVICE_URL=http://target-service:3002
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
 
   mongodb:
     image: mongo:7
@@ -83,6 +85,24 @@ services:
     volumes:
       - register_mongodb_data:/data/db
 
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: photo-prestige-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER:-guest}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS:-guest}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 volumes:
   mongodb_data:
   register_mongodb_data:
+  rabbitmq_data:

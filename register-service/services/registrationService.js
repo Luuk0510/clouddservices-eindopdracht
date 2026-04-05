@@ -1,6 +1,7 @@
 var Registration = require('../models/Registration');
 var targetServiceClient = require('./targetServiceClient');
 var HttpError = require('../utils/HttpError');
+var rabbitmq = require('../utils/rabbitmq');
 
 function serializeRegistration(registration) {
   return {
@@ -66,6 +67,13 @@ exports.createRegistration = async function createRegistration(input) {
     targetOwnerId: target.ownerId,
     targetDeadline: target.deadline,
     status: 'active'
+  });
+
+  rabbitmq.publish('registration.created', {
+    registrationId: String(registration._id),
+    targetId: registration.targetId,
+    userId: registration.userId,
+    userEmail: registration.userEmail
   });
 
   return {
