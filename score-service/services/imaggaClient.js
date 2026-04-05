@@ -6,6 +6,22 @@ function createBasicAuthHeader() {
   return 'Basic ' + token;
 }
 
+function buildUpstreamError(response, payload) {
+  var upstreamMessage = payload && payload.status && payload.status.text
+    ? payload.status.text
+    : 'Imagga request failed';
+
+  if (response.status === 400 && upstreamMessage === "Couldn't download image") {
+    return new HttpError(400, 'Image URL must be a direct public image URL');
+  }
+
+  if (response.status === 401 || response.status === 403) {
+    return new HttpError(502, 'Imagga credentials were rejected');
+  }
+
+  return new HttpError(502, 'Imagga request failed: ' + upstreamMessage);
+}
+
 exports.fetchTagsForImage = async function fetchTagsForImage(imageUrl) {
   if (!env.imaggaApiKey || !env.imaggaApiSecret) {
     throw new HttpError(503, 'Imagga credentials are missing');
@@ -24,7 +40,9 @@ exports.fetchTagsForImage = async function fetchTagsForImage(imageUrl) {
     );
 
     if (!response.ok) {
-      throw new HttpError(502, 'Imagga request failed');
+      throw buildUpstreamError(response, await response.json().catch(function() {
+        return null;
+      }));
     }
 
     var payload = await response.json();
