@@ -63,7 +63,7 @@ async function reachDeadline(targetId) {
     return;
   }
 
-  logger.info('clock.deadline_reached', {
+  logger.info('clock.deadline_reached.v1', {
     targetId: targetId,
     deadlineAt: clock.deadlineAt.toISOString(),
     reachedAt: reachedAt.toISOString()
