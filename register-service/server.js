@@ -3,8 +3,28 @@ var connectDatabase = require('./config/database');
 var env = require('./config/env');
 var mongoose = require('mongoose');
 var logger = require('./utils/logger');
+var rabbitmq = require('./utils/rabbitmq');
 
 connectDatabase(env.mongoUri).then(function() {
+  rabbitmq.connect().then(function() {
+    rabbitmq.subscribe(
+      'register-service.registration.created',
+      'registration.created',
+      function(message) {
+        logger.info('rabbitmq.received', {
+          routingKey: 'registration.created',
+          targetId: message.targetId,
+          userId: message.userId,
+          userEmail: message.userEmail
+        });
+      }
+    ).catch(function(error) {
+      logger.error('rabbitmq.subscribe_failed', { message: error.message });
+    });
+  }).catch(function() {
+    // connect mislukt – reconnect wordt intern afgehandeld door rabbitmq util
+  });
+
   var server = app.listen(env.port, function() {
     logger.info('server.started', { port: env.port });
   });
@@ -12,12 +32,19 @@ connectDatabase(env.mongoUri).then(function() {
   function shutdown() {
     logger.info('server.stopping');
     server.close(function() {
-      mongoose.connection.close(false).then(function() {
-        logger.info('server.stopped');
-        process.exit(0);
-      }).catch(function() {
-        logger.error('server.stop_failed');
-        process.exit(1);
+      rabbitmq.close().then(function() {
+        mongoose.connection.close(false).then(function() {
+          logger.info('server.stopped');
+          process.exit(0);
+        }).catch(function() {
+          logger.error('server.stop_failed');
+          process.exit(1);
+        });
+      }).catch(function(error) {
+        logger.error('rabbitmq.close_failed', { message: error.message });
+        mongoose.connection.close(false).then(function() {
+          process.exit(1);
+        });
       });
     });
   }
