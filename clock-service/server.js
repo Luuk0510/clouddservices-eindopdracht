@@ -5,19 +5,40 @@ var mongoose = require('mongoose');
 var logger = require('./utils/logger');
 var rabbitmq = require('./utils/rabbitmq');
 var clockService = require('./services/clockService');
+var SUBSCRIBE_RETRY_DELAY_MS = 5000;
 
-connectDatabase(env.mongoUri).then(async function() {
-  await rabbitmq.connect();
-
-  await rabbitmq.subscribe(
+function subscribeToTargetCreated() {
+  rabbitmq.subscribe(
     'clock-service.target-created.v1',
     'target.created.v1',
     async function(message) {
       await clockService.handleTargetCreatedEvent(message);
     }
-  );
+  ).then(function() {
+    logger.info('rabbitmq.subscribed', {
+      queue: 'clock-service.target-created.v1',
+      routingKey: 'target.created.v1'
+    });
+  }).catch(function(error) {
+    logger.error('rabbitmq.subscribe_failed', {
+      message: error.message,
+      retryInMs: SUBSCRIBE_RETRY_DELAY_MS
+    });
 
-  await clockService.restoreRunningClocks();
+    setTimeout(subscribeToTargetCreated, SUBSCRIBE_RETRY_DELAY_MS);
+  });
+}
+
+connectDatabase(env.mongoUri).then(function() {
+  rabbitmq.connect().catch(function() {
+    // connect mislukt - reconnect wordt intern afgehandeld door rabbitmq util
+  });
+
+  subscribeToTargetCreated();
+
+  clockService.restoreRunningClocks().catch(function(error) {
+    logger.error('clock.restore_failed', { message: error.message });
+  });
 
   var server = app.listen(env.port, function() {
     logger.info('server.started', { port: env.port });
