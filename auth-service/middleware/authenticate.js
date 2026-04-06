@@ -1,32 +1,32 @@
 var jwt = require('jsonwebtoken');
 var User = require('../models/User');
+var env = require('../config/env');
+var HttpError = require('../utils/HttpError');
 
 module.exports = async function authenticate(req, res, next) {
   try {
     var authHeader = req.get('Authorization');
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({
-        message: 'Missing bearer token'
-      });
+      throw new HttpError(401, 'Missing bearer token');
     }
 
     var token = authHeader.slice(7);
-    var payload = jwt.verify(token, process.env.JWT_SECRET || 'dev-secret-change-me');
+    var payload = jwt.verify(token, env.jwtSecret);
     var user = await User.findById(payload.userId);
 
     if (!user) {
-      return res.status(401).json({
-        message: 'User not found'
-      });
+      throw new HttpError(401, 'User not found');
     }
 
     req.user = user;
     req.auth = payload;
     next();
   } catch (error) {
-    return res.status(401).json({
-      message: 'Invalid token'
-    });
+    if (error.statusCode) {
+      return next(error);
+    }
+
+    return next(new HttpError(401, 'Invalid token'));
   }
 };

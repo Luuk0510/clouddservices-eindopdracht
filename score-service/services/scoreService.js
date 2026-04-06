@@ -1,0 +1,172 @@
+var Submission = require('../models/Submission');
+var env = require('../config/env');
+var imaggaClient = require('./imaggaClient');
+var targetServiceClient = require('./targetServiceClient');
+var HttpError = require('../utils/HttpError');
+
+function normalizeImageUrl(value) {
+  return String(value || '').trim();
+}
+
+function calculateTagSimilarityScore(targetTags, submissionTags) {
+  var limit = 10;
+  var submissionMap = {};
+  var sharedConfidence = 0;
+  var sharedCount = 0;
+  var i;
+
+  for (i = 0; i < Math.min(submissionTags.length, limit); i += 1) {
+    submissionMap[submissionTags[i].tag] = submissionTags[i].confidence;
+  }
+
+  for (i = 0; i < Math.min(targetTags.length, limit); i += 1) {
+    if (submissionMap[targetTags[i].tag] !== undefined) {
+      sharedConfidence += Math.min(targetTags[i].confidence, submissionMap[targetTags[i].tag]);
+      sharedCount += 1;
+    }
+  }
+
+  if (!sharedCount) {
+    return 0;
+  }
+
+  return Math.round(sharedConfidence / sharedCount);
+}
+
+async function calculateScore(targetUrl, submissionUrl) {
+  var targetTags = await imaggaClient.fetchTagsForImage(targetUrl);
+  var submissionTags = await imaggaClient.fetchTagsForImage(submissionUrl);
+
+  return calculateTagSimilarityScore(targetTags, submissionTags);
+}
+
+function serializeSubmission(submission) {
+  return {
+    submissionId: submission._id,
+    targetId: submission.targetId,
+    userId: submission.userId,
+    userEmail: submission.userEmail,
+    imageUrl: submission.imageUrl,
+    similarityScore: submission.similarityScore,
+    submittedAt: submission.createdAt
+  };
+}
+
+async function loadOpenTarget(targetId, authToken) {
+  var target = await targetServiceClient.getTargetById(targetId, authToken);
+
+  if (!target) {
+    throw new HttpError(404, 'Target not found');
+  }
+
+  var deadlineAt = new Date(target.deadlineAt);
+
+  if (Number.isNaN(deadlineAt.getTime())) {
+    throw new HttpError(502, 'Target service returned an invalid deadline');
+  }
+
+  if (target.status !== 'active' || deadlineAt.getTime() <= Date.now()) {
+    throw new HttpError(409, 'Target is closed, no submissions accepted');
+  }
+
+  return target;
+}
+
+exports.createSubmission = async function createSubmission(input) {
+  var target = await loadOpenTarget(input.targetId, input.authToken);
+  var imageUrl = normalizeImageUrl(input.body.imageUrl);
+
+  if (imageUrl === normalizeImageUrl(target.imageUrl)) {
+    throw new HttpError(400, 'Submission must not use the exact same image URL as the target');
+  }
+
+  var similarityScore = await calculateScore(target.imageUrl, imageUrl);
+
+  var submission = await Submission.create({
+    targetId: target.targetId,
+    userId: input.user.userId,
+    userEmail: input.user.email || '',
+    imageUrl: imageUrl,
+    similarityScore: similarityScore
+  });
+
+  return {
+    message: 'Submission created',
+    submission: serializeSubmission(submission)
+  };
+};
+
+exports.getBestScoreForUser = async function getBestScoreForUser(input) {
+  var target = await targetServiceClient.getTargetById(input.targetId, input.authToken);
+
+  if (!target) {
+    throw new HttpError(404, 'Target not found');
+  }
+
+  var submission = await Submission.findOne({
+    targetId: input.targetId,
+    userId: input.user.userId
+  }).sort({ similarityScore: -1, createdAt: 1 });
+
+  if (!submission) {
+    throw new HttpError(404, 'No submission found for this participant on this target');
+  }
+
+  return {
+    targetId: input.targetId,
+    userId: input.user.userId,
+    score: {
+      similarityScore: submission.similarityScore
+    },
+    submissionId: submission._id,
+    submittedAt: submission.createdAt
+  };
+};
+
+exports.getAllScoresForTarget = async function getAllScoresForTarget(input) {
+  var target = await targetServiceClient.getTargetById(input.targetId, input.authToken);
+
+  if (!target) {
+    throw new HttpError(404, 'Target not found');
+  }
+
+  if (target.ownerId !== input.user.userId) {
+    throw new HttpError(403, 'Only the target owner can view all scores');
+  }
+
+  var submissions = await Submission.find({ targetId: input.targetId }).sort({ similarityScore: -1, createdAt: 1 });
+
+  return {
+    targetId: input.targetId,
+    winnerSubmissionId: submissions.length ? submissions[0]._id : null,
+    scores: submissions.map(function(submission, index) {
+      return {
+        rank: index + 1,
+        submissionId: submission._id,
+        userId: submission.userId,
+        userEmail: submission.userEmail,
+        similarityScore: submission.similarityScore,
+        submittedAt: submission.createdAt
+      };
+    })
+  };
+};
+
+exports.deleteSubmission = async function deleteSubmission(input) {
+  var submission = await Submission.findById(input.submissionId);
+
+  if (!submission) {
+    throw new HttpError(404, 'Submission not found');
+  }
+
+  if (submission.userId !== input.userId) {
+    throw new HttpError(403, 'You can only delete your own upload');
+  }
+
+  await Submission.deleteOne({ _id: submission._id });
+
+  return {
+    message: 'Submission deleted',
+    submissionId: submission._id
+  };
+};

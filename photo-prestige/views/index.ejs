@@ -6,10 +6,18 @@
   </head>
   <body>
     <main class="page">
+      <nav class="top-nav">
+        <a class="nav-link active-link" href="/">Home</a>
+        <a class="nav-link" href="/auth-demo">Auth Demo</a>
+        <a class="nav-link" href="/register-demo">Register Demo</a>
+        <a class="nav-link" href="/score-demo">Score Demo</a>
+        <a class="nav-link" href="/target-demo">Target Demo</a>
+      </nav>
+
       <section class="hero">
         <p class="eyebrow">Minimal Demo GUI</p>
         <h1><%= title %></h1>
-        <p class="intro">Gebruik deze pagina om de API Gateway en auth-service snel te testen zonder Postman.</p>
+        <p class="intro">Gebruik dit startscherm om naar kleine testpagina's te gaan in plaats van alles op een grote pagina te zetten.</p>
       </section>
 
       <section class="card">
@@ -22,118 +30,48 @@
 
       <section class="grid">
         <section class="card">
-          <h2>Register</h2>
-          <form id="register-form">
-            <label for="register-email">Email</label>
-            <input id="register-email" name="email" type="email" placeholder="test@example.com" required />
-
-            <label for="register-password">Wachtwoord</label>
-            <input id="register-password" name="password" type="password" placeholder="123456" required />
-
-            <label for="register-role">Rol</label>
-            <select id="register-role" name="role">
-              <option value="participant">participant</option>
-              <option value="target-owner">target-owner</option>
-            </select>
-
-            <button type="submit">Register</button>
-          </form>
-          <pre id="register-result">Nog geen request verstuurd.</pre>
+          <h2>Auth Demo</h2>
+          <p>Register, login en JWT opslaan in de browser.</p>
+          <a class="button-link" href="/auth-demo">Open auth page</a>
         </section>
 
         <section class="card">
-          <h2>Login</h2>
-          <form id="login-form">
-            <label for="login-email">Email</label>
-            <input id="login-email" name="email" type="email" placeholder="test@example.com" required />
+          <h2>Register Demo</h2>
+          <p>Test register health, create registration, participants en delete.</p>
+          <a class="button-link" href="/register-demo">Open register page</a>
+        </section>
 
-            <label for="login-password">Wachtwoord</label>
-            <input id="login-password" name="password" type="password" placeholder="123456" required />
+        <section class="card">
+          <h2>Score Demo</h2>
+          <p>Test submissions, mijn score, alle scores en delete submission.</p>
+          <a class="button-link" href="/score-demo">Open score page</a>
+        </section>
 
-            <button type="submit">Login</button>
-          </form>
-          <pre id="login-result">Nog geen request verstuurd.</pre>
+        <section class="card">
+          <h2>Target Demo</h2>
+          <p>Targets aanmaken, beheren en als deelnemer inzendingen uploaden.</p>
+          <a class="button-link" href="/target-demo">Open target page</a>
         </section>
       </section>
     </main>
 
     <script>
-      function showJson(elementId, payload) {
-        document.getElementById(elementId).textContent = JSON.stringify(payload, null, 2);
-      }
-
       async function requestJson(url, options) {
         const response = await fetch(url, options);
         const text = await response.text();
-
         try {
-          return {
-            status: response.status,
-            ok: response.ok,
-            body: JSON.parse(text)
-          };
+          return { status: response.status, ok: response.ok, body: JSON.parse(text) };
         } catch (error) {
-          return {
-            status: response.status,
-            ok: response.ok,
-            body: text
-          };
+          return { status: response.status, ok: response.ok, body: text };
         }
       }
 
       document.getElementById('health-button').addEventListener('click', async function() {
         try {
           const result = await requestJson('/api/v1/health', { method: 'GET' });
-          showJson('health-result', result);
+          document.getElementById('health-result').textContent = JSON.stringify(result, null, 2);
         } catch (error) {
-          showJson('health-result', { error: error.message });
-        }
-      });
-
-      document.getElementById('register-form').addEventListener('submit', async function(event) {
-        event.preventDefault();
-
-        const formData = new FormData(event.target);
-        const payload = {
-          email: formData.get('email'),
-          password: formData.get('password'),
-          role: formData.get('role')
-        };
-
-        try {
-          const result = await requestJson('/api/v1/auth/register', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(payload)
-          });
-          showJson('register-result', result);
-        } catch (error) {
-          showJson('register-result', { error: error.message });
-        }
-      });
-
-      document.getElementById('login-form').addEventListener('submit', async function(event) {
-        event.preventDefault();
-
-        const formData = new FormData(event.target);
-        const payload = {
-          email: formData.get('email'),
-          password: formData.get('password')
-        };
-
-        try {
-          const result = await requestJson('/api/v1/auth/login', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(payload)
-          });
-          showJson('login-result', result);
-        } catch (error) {
-          showJson('login-result', { error: error.message });
+          document.getElementById('health-result').textContent = JSON.stringify({ error: error.message }, null, 2);
         }
       });
     </script>
