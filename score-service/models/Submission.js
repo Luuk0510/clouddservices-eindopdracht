@@ -1,6 +1,9 @@
 var mongoose = require('mongoose');
 
 var submissionSchema = new mongoose.Schema({
+  sourceSubmissionId: {
+    type: String
+  },
   targetId: {
     type: String,
     required: true,
@@ -30,5 +33,6 @@ var submissionSchema = new mongoose.Schema({
 });
 
 submissionSchema.index({ targetId: 1, userId: 1, createdAt: -1 });
+submissionSchema.index({ sourceSubmissionId: 1 }, { unique: true, sparse: true });
 
 module.exports = mongoose.model('Submission', submissionSchema);
