@@ -4,6 +4,7 @@ var env = require('./config/env');
 var mongoose = require('mongoose');
 var logger = require('./utils/logger');
 var rabbitmq = require('./utils/rabbitmq');
+var clockEventService = require('./services/clockEventService');
 
 connectDatabase(env.mongoUri).then(function() {
   rabbitmq.connect().then(function() {
@@ -18,7 +19,22 @@ connectDatabase(env.mongoUri).then(function() {
           userEmail: message.userEmail
         });
       }
-    ).catch(function(error) {
+    ).then(function() {
+      return rabbitmq.subscribe(
+        'register-service.clock.deadline-reached.v1',
+        'clock.deadline-reached.v1',
+        function(message) {
+          return clockEventService.markTargetClosed(message).then(function() {
+            logger.info('rabbitmq.received', {
+              routingKey: 'clock.deadline-reached.v1',
+              targetId: message.targetId,
+              deadlineAt: message.deadlineAt,
+              reachedAt: message.reachedAt
+            });
+          });
+        }
+      );
+    }).catch(function(error) {
       logger.error('rabbitmq.subscribe_failed', { message: error.message });
     });
   }).catch(function() {

@@ -39,6 +39,7 @@ services:
     container_name: photo-prestige-target-service
     depends_on:
       - mongodb
+      - rabbitmq
     ports:
       - "${TARGET_SERVICE_PORT:-3002}:3002"
     environment:
@@ -46,6 +47,7 @@ services:
       - PORT=3002
       - MONGODB_URI=${TARGET_MONGODB_URI:-mongodb://mongodb:27017/photo-prestige}
       - JWT_SECRET=${JWT_SECRET:-change-this-in-real-deployments}
+      - RABBITMQ_URL=${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672}
 
   register-service:
     build:
@@ -84,6 +86,21 @@ services:
       - IMAGGA_API_SECRET=${IMAGGA_API_SECRET:-}
       - IMAGGA_API_BASE_URL=${IMAGGA_API_BASE_URL:-https://api.imagga.com/v2}
 
+  clock-service:
+    build:
+      context: ./clock-service
+    container_name: photo-prestige-clock-service
+    depends_on:
+      - clock-mongodb
+      - rabbitmq
+    ports:
+      - "${CLOCK_SERVICE_PORT:-3004}:3004"
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - PORT=3004
+      - MONGODB_URI=${CLOCK_MONGODB_URI:-mongodb://clock-mongodb:27017/clock-service}
+      - RABBITMQ_URL=${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672}
+
   mongodb:
     image: mongo:7
     container_name: photo-prestige-mongodb
@@ -114,6 +131,16 @@ services:
     volumes:
       - score_mongodb_data:/data/db
 
+  clock-mongodb:
+    image: mongo:7
+    container_name: photo-prestige-clock-mongodb
+    ports:
+      - "27020:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=clock-service
+    volumes:
+      - clock_mongodb_data:/data/db
+
   rabbitmq:
     image: rabbitmq:3-management
     container_name: photo-prestige-rabbitmq
@@ -135,4 +162,5 @@ volumes:
   mongodb_data:
   register_mongodb_data:
   score_mongodb_data:
+  clock_mongodb_data:
   rabbitmq_data:

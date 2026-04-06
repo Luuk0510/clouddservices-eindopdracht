@@ -4,11 +4,20 @@ var env = require('./config/env');
 var mongoose = require('mongoose');
 var logger = require('./utils/logger');
 var rabbitmq = require('./utils/rabbitmq');
+var clockService = require('./services/clockService');
 
-connectDatabase(env.mongoUri).then(function() {
-  rabbitmq.connect().catch(function() {
-    // connect mislukt - reconnect wordt intern afgehandeld door rabbitmq util
-  });
+connectDatabase(env.mongoUri).then(async function() {
+  await rabbitmq.connect();
+
+  await rabbitmq.subscribe(
+    'clock-service.target-created.v1',
+    'target.created.v1',
+    async function(message) {
+      await clockService.handleTargetCreatedEvent(message);
+    }
+  );
+
+  await clockService.restoreRunningClocks();
 
   var server = app.listen(env.port, function() {
     logger.info('server.started', { port: env.port });
@@ -17,6 +26,8 @@ connectDatabase(env.mongoUri).then(function() {
   function shutdown() {
     logger.info('server.stopping');
     server.close(function() {
+      clockService.stopAll();
+
       rabbitmq.close().then(function() {
         mongoose.connection.close(false).then(function() {
           logger.info('server.stopped');

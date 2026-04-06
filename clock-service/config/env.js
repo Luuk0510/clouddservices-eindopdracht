@@ -1,0 +1,5 @@
+module.exports = {
+  port: process.env.PORT || 3004,
+  mongoUri: process.env.MONGODB_URI || 'mongodb://clock-mongodb:27017/clock-service',
+  rabbitmqUrl: process.env.RABBITMQ_URL || 'amqp://guest:guest@localhost:5672'
+};
