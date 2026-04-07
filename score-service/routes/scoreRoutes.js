@@ -12,6 +12,7 @@ router.get('/api/v1/score/health', scoreController.health);
 router.post('/api/v1/targets/:targetId/submissions', authenticate, validateTargetId, validateImageUrl, asyncHandler(scoreController.createSubmission));
 router.get('/api/v1/targets/:targetId/score', authenticate, validateTargetId, asyncHandler(scoreController.getMyScore));
 router.get('/api/v1/targets/:targetId/scores', authenticate, validateTargetId, asyncHandler(scoreController.getTargetScores));
+router.get('/api/v1/targets/:targetId/winner', authenticate, validateTargetId, asyncHandler(scoreController.getTargetWinner));
 router.delete('/api/v1/submissions/:submissionId', authenticate, asyncHandler(scoreController.deleteSubmission));
 
 module.exports = router;

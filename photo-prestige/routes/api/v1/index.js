@@ -58,6 +58,7 @@ router.use('/targets/:targetId/submissions', createPreservedPathProxy(scoreServi
 router.use('/submissions', createPreservedPathProxy(scoreServiceUrl));
 router.use('/targets/:targetId/score', createPreservedPathProxy(scoreServiceUrl));
 router.use('/targets/:targetId/scores', createPreservedPathProxy(scoreServiceUrl));
+router.use('/targets/:targetId/winner', createPreservedPathProxy(scoreServiceUrl));
 router.use('/score', createPreservedPathProxy(scoreServiceUrl));
 router.use('/register', createPreservedPathProxy(registerServiceUrl));
 router.use('/targets', createServiceProxy(targetServiceUrl));

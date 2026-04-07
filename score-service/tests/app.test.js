@@ -49,6 +49,14 @@ describe('score-service app', function() {
     expect(response.body.error.message).toBe('Invalid token');
   });
 
+  it('requires a bearer token to load the winner', async function() {
+    var response = await request(app)
+      .get('/api/v1/targets/target-123/winner');
+
+    expect(response.status).toBe(401);
+    expect(response.body.error.message).toBe('Missing bearer token');
+  });
+
   it('requires a bearer token to delete a submission', async function() {
     var response = await request(app)
       .delete('/api/v1/submissions/submission-123');

@@ -1,4 +1,5 @@
 var Submission = require('../models/Submission');
+var Winner = require('../models/Winner');
 var env = require('../config/env');
 var imaggaClient = require('./imaggaClient');
 var targetServiceClient = require('./targetServiceClient');
@@ -102,6 +103,7 @@ function publishScoreCalculated(submission, sourceSubmissionId) {
 }
 
 function publishWinnerCalculated(message, winnerSubmission) {
+  var calculatedAt = new Date();
   var payload = {
     targetId: message.targetId,
     winnerSubmissionId: winnerSubmission ? String(winnerSubmission._id) : null,
@@ -109,7 +111,7 @@ function publishWinnerCalculated(message, winnerSubmission) {
     similarityScore: winnerSubmission ? winnerSubmission.similarityScore : null,
     submittedAt: winnerSubmission ? winnerSubmission.createdAt.toISOString() : null,
     deadlineAt: message.deadlineAt,
-    calculatedAt: new Date().toISOString()
+    calculatedAt: calculatedAt.toISOString()
   };
 
   logger.info('competition.publishing', {
@@ -119,6 +121,20 @@ function publishWinnerCalculated(message, winnerSubmission) {
   });
 
   rabbitmq.publish('competition.winner-calculated.v1', payload);
+
+  return payload;
+}
+
+function serializeWinner(winner) {
+  return {
+    targetId: winner.targetId,
+    winnerSubmissionId: winner.winnerSubmissionId,
+    winnerUserId: winner.winnerUserId,
+    similarityScore: winner.similarityScore,
+    submittedAt: winner.submittedAt ? winner.submittedAt.toISOString() : null,
+    deadlineAt: winner.deadlineAt.toISOString(),
+    calculatedAt: winner.calculatedAt.toISOString()
+  };
 }
 
 async function loadOpenTarget(targetId, authToken) {
@@ -293,10 +309,40 @@ exports.handleDeadlineReachedEvent = async function handleDeadlineReachedEvent(m
     targetId: message.targetId
   }).sort({ similarityScore: -1, createdAt: 1 });
 
-  publishWinnerCalculated(message, winnerSubmission);
+  var payload = publishWinnerCalculated(message, winnerSubmission);
+
+  await Winner.findOneAndUpdate({
+    targetId: message.targetId
+  }, {
+    $set: {
+      winnerSubmissionId: payload.winnerSubmissionId,
+      winnerUserId: payload.winnerUserId,
+      similarityScore: payload.similarityScore,
+      submittedAt: payload.submittedAt ? new Date(payload.submittedAt) : null,
+      deadlineAt: new Date(payload.deadlineAt),
+      calculatedAt: new Date(payload.calculatedAt)
+    }
+  }, {
+    upsert: true,
+    new: true,
+    setDefaultsOnInsert: true
+  });
 
   return {
     targetId: message.targetId,
     winnerSubmissionId: winnerSubmission ? String(winnerSubmission._id) : null
+  };
+};
+
+exports.getWinnerForTarget = async function getWinnerForTarget(targetId) {
+  var winner = await Winner.findOne({ targetId: targetId });
+
+  if (!winner) {
+    throw new HttpError(404, 'Winner has not been calculated yet');
+  }
+
+  return {
+    targetId: targetId,
+    winner: serializeWinner(winner)
   };
 };
