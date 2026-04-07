@@ -9,6 +9,7 @@ services:
       - register-service
       - score-service
       - rabbitmq
+      - mail-service
     ports:
       - "${GATEWAY_PORT:-3000}:3000"
     environment:
@@ -19,6 +20,7 @@ services:
       - REGISTER_SERVICE_URL=${REGISTER_SERVICE_URL:-http://register-service:3003}
       - SCORE_SERVICE_URL=${SCORE_SERVICE_URL:-http://score-service:3005}
       - RABBITMQ_URL=${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672}
+      - MAIL_SERVICE_URL=${MAIL_SERVICE_URL:-http://mail-service:3006}
 
   auth-service:
     build:
@@ -105,6 +107,27 @@ services:
       - PORT=3004
       - MONGODB_URI=${CLOCK_MONGODB_URI:-mongodb://clock-mongodb:27017/clock-service}
       - RABBITMQ_URL=${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672}
+      - DEADLINE_REMINDER_MINUTES=${DEADLINE_REMINDER_MINUTES:-60}
+
+  mail-service:
+    build:
+      context: ./mail-service
+    container_name: photo-prestige-mail-service
+    depends_on:
+      - mail-mongodb
+      - rabbitmq
+    ports:
+      - "${MAIL_SERVICE_PORT:-3006}:3006"
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - PORT=3006
+      - MAIL_MONGODB_URI=${MAIL_MONGODB_URI:-mongodb://mail-mongodb:27017/mail-service}
+      - JWT_SECRET=${JWT_SECRET:-change-this-in-real-deployments}
+      - RABBITMQ_URL=${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672}
+      - RESEND_API_KEY=${RESEND_API_KEY:-}
+      - MAIL_FROM=${MAIL_FROM:-Photo Prestige <onboarding@resend.dev>}
+      - MAIL_TEST_TO=${MAIL_TEST_TO:-}
+      - MAIL_FORCE_TEST_RECIPIENT=${MAIL_FORCE_TEST_RECIPIENT:-true}
 
   mongodb:
     image: mongo:7
@@ -146,6 +169,16 @@ services:
     volumes:
       - clock_mongodb_data:/data/db
 
+  mail-mongodb:
+    image: mongo:7
+    container_name: photo-prestige-mail-mongodb
+    ports:
+      - "27021:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=mail-service
+    volumes:
+      - mail_mongodb_data:/data/db
+
   rabbitmq:
     image: rabbitmq:3-management
     container_name: photo-prestige-rabbitmq
@@ -168,4 +201,5 @@ volumes:
   register_mongodb_data:
   score_mongodb_data:
   clock_mongodb_data:
+  mail_mongodb_data:
   rabbitmq_data:

@@ -1,14 +1,21 @@
 var Clock = require('../models/Clock');
+var env = require('../config/env');
 var rabbitmq = require('../utils/rabbitmq');
 var logger = require('../utils/logger');
 
 var MAX_TIMEOUT_MS = 2147483647;
 var timers = {};
+var reminderTimers = {};
 
 function clearTimer(targetId) {
   if (timers[targetId]) {
     clearTimeout(timers[targetId]);
     delete timers[targetId];
+  }
+
+  if (reminderTimers[targetId]) {
+    clearTimeout(reminderTimers[targetId]);
+    delete reminderTimers[targetId];
   }
 }
 
@@ -44,6 +51,17 @@ function publishDeadlineReached(clock) {
   });
 }
 
+function publishDeadlineReminder(clock) {
+  rabbitmq.publish('clock.deadline-reminder.v1', {
+    clockId: String(clock._id),
+    targetId: clock.targetId,
+    ownerId: clock.ownerId,
+    ownerEmail: clock.ownerEmail,
+    deadlineAt: clock.deadlineAt.toISOString(),
+    reminderAt: new Date().toISOString()
+  });
+}
+
 async function reachDeadline(targetId) {
   var reachedAt = new Date();
 
@@ -72,6 +90,31 @@ async function reachDeadline(targetId) {
   publishDeadlineReached(clock);
 }
 
+function scheduleReminder(clock) {
+  var reminderOffsetMs = env.deadlineReminderMinutes * 60 * 1000;
+  var reminderAtMs = new Date(clock.deadlineAt).getTime() - reminderOffsetMs;
+  var delay = reminderAtMs - Date.now();
+
+  if (delay <= 0) {
+    return;
+  }
+
+  if (reminderTimers[clock.targetId]) {
+    clearTimeout(reminderTimers[clock.targetId]);
+  }
+
+  reminderTimers[clock.targetId] = setTimeout(function() {
+    delete reminderTimers[clock.targetId];
+
+    publishDeadlineReminder(clock);
+
+    logger.info('clock.deadline_reminder.v1', {
+      targetId: clock.targetId,
+      deadlineAt: new Date(clock.deadlineAt).toISOString()
+    });
+  }, delay);
+}
+
 function scheduleClock(clock) {
   var remainingMs = getRemainingMs(clock.deadlineAt);
 
@@ -80,6 +123,7 @@ function scheduleClock(clock) {
   }
 
   scheduleInChunks(clock.targetId, remainingMs);
+  scheduleReminder(clock);
 
   logger.info('clock.scheduled', {
     targetId: clock.targetId,

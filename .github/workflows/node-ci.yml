@@ -18,7 +18,9 @@ jobs:
           - photo-prestige
           - auth-service
           - register-service
+          - clock-service
           - score-service
+          - mail-service
           - target-service
           - clock-service
 
