@@ -2,6 +2,7 @@ var Registration = require('../models/Registration');
 var targetServiceClient = require('./targetServiceClient');
 var HttpError = require('../utils/HttpError');
 var rabbitmq = require('../utils/rabbitmq');
+var clockEventService = require('./clockEventService');
 
 function serializeRegistration(registration) {
   return {
@@ -48,6 +49,12 @@ async function ensureTargetAllowsRegistration(targetId, authToken) {
 }
 
 exports.createRegistration = async function createRegistration(input) {
+  var isClosed = await clockEventService.isTargetClosed(input.targetId);
+
+  if (isClosed) {
+    throw new HttpError(409, 'Registration for this target is closed');
+  }
+
   var target = await ensureTargetAllowsRegistration(input.targetId, input.authToken);
   var existingRegistration = await Registration.findOne({
     targetId: input.targetId,

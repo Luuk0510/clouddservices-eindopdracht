@@ -4,6 +4,7 @@ var Target = require('../models/Target');
 var Submission = require('../models/Submission');
 var authenticate = require('../middleware/authenticate');
 var authorizeRole = require('../middleware/authorizeRole');
+var rabbitmq = require('../utils/rabbitmq');
 
 var router = express.Router();
 
@@ -204,6 +205,15 @@ router.post('/', authenticate, authorizeRole('target-owner'), async function(req
       status: 'active',
       ownerId: req.auth.userId,
       ownerEmail: req.auth.email || ''
+    });
+
+    rabbitmq.publish('target.created.v1', {
+      targetId: String(target._id),
+      ownerId: target.ownerId,
+      ownerEmail: target.ownerEmail,
+      imageUrl: target.imageUrl,
+      deadlineAt: target.deadlineAt.toISOString(),
+      createdAt: target.createdAt.toISOString()
     });
 
     res.status(201).json({
