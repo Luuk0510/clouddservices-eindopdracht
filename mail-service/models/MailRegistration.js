@@ -16,6 +16,30 @@ var mailRegistrationSchema = new mongoose.Schema({
     lowercase: true,
     trim: true
   },
+  targetTitle: {
+    type: String,
+    default: ''
+  },
+  targetDescription: {
+    type: String,
+    default: ''
+  },
+  targetCity: {
+    type: String,
+    default: ''
+  },
+  targetLocationDescription: {
+    type: String,
+    default: ''
+  },
+  targetRadiusMeters: {
+    type: Number,
+    default: null
+  },
+  targetDeadline: {
+    type: Date,
+    default: null
+  },
   status: {
     type: String,
     enum: ['active', 'cancelled'],

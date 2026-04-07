@@ -13,6 +13,12 @@ exports.handleRegistrationCreatedEvent = async function handleRegistrationCreate
   }, {
     $set: {
       userEmail: message.userEmail,
+      targetTitle: message.targetTitle || '',
+      targetDescription: message.targetDescription || '',
+      targetCity: message.targetCity || '',
+      targetLocationDescription: message.targetLocationDescription || '',
+      targetRadiusMeters: message.targetRadiusMeters || null,
+      targetDeadline: message.targetDeadline ? new Date(message.targetDeadline) : null,
       status: 'active',
       registeredAt: new Date()
     }
@@ -25,6 +31,12 @@ exports.handleRegistrationCreatedEvent = async function handleRegistrationCreate
   await mailService.sendRegistrationEmail({
     userEmail: message.userEmail,
     targetId: message.targetId,
+    targetTitle: message.targetTitle,
+    targetDescription: message.targetDescription,
+    targetCity: message.targetCity,
+    targetLocationDescription: message.targetLocationDescription,
+    targetRadiusMeters: message.targetRadiusMeters,
+    targetDeadline: message.targetDeadline,
     registrationId: message.registrationId,
     userId: message.userId
   });
@@ -46,6 +58,12 @@ exports.handleWinnerCalculatedEvent = async function handleWinnerCalculatedEvent
     await mailService.sendScoreEmail({
       to: registrations[i].userEmail,
       targetId: message.targetId,
+      targetTitle: registrations[i].targetTitle,
+      targetDescription: registrations[i].targetDescription,
+      targetCity: registrations[i].targetCity,
+      targetLocationDescription: registrations[i].targetLocationDescription,
+      targetRadiusMeters: registrations[i].targetRadiusMeters,
+      targetDeadline: registrations[i].targetDeadline ? registrations[i].targetDeadline.toISOString() : null,
       winnerSubmissionId: message.winnerSubmissionId,
       winnerUserId: message.winnerUserId,
       similarityScore: message.similarityScore,
@@ -74,6 +92,11 @@ exports.handleDeadlineReminderEvent = async function handleDeadlineReminderEvent
     await mailService.sendDeadlineReminderEmail({
       to: registrations[i].userEmail,
       targetId: message.targetId,
+      targetTitle: registrations[i].targetTitle,
+      targetDescription: registrations[i].targetDescription,
+      targetCity: registrations[i].targetCity,
+      targetLocationDescription: registrations[i].targetLocationDescription,
+      targetRadiusMeters: registrations[i].targetRadiusMeters,
       deadlineAt: message.deadlineAt
     });
   }
@@ -99,6 +122,11 @@ exports.handleDeadlineReachedEvent = async function handleDeadlineReachedEvent(m
     await mailService.sendDeadlineClosedEmail({
       to: registrations[i].userEmail,
       targetId: message.targetId,
+      targetTitle: registrations[i].targetTitle,
+      targetDescription: registrations[i].targetDescription,
+      targetCity: registrations[i].targetCity,
+      targetLocationDescription: registrations[i].targetLocationDescription,
+      targetRadiusMeters: registrations[i].targetRadiusMeters,
       deadlineAt: message.deadlineAt
     });
   }
