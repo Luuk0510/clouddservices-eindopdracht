@@ -101,6 +101,26 @@ function publishScoreCalculated(submission, sourceSubmissionId) {
   rabbitmq.publish('score.calculated.v1', payload);
 }
 
+function publishWinnerCalculated(message, winnerSubmission) {
+  var payload = {
+    targetId: message.targetId,
+    winnerSubmissionId: winnerSubmission ? String(winnerSubmission._id) : null,
+    winnerUserId: winnerSubmission ? winnerSubmission.userId : null,
+    similarityScore: winnerSubmission ? winnerSubmission.similarityScore : null,
+    submittedAt: winnerSubmission ? winnerSubmission.createdAt.toISOString() : null,
+    deadlineAt: message.deadlineAt,
+    calculatedAt: new Date().toISOString()
+  };
+
+  logger.info('competition.publishing', {
+    routingKey: 'competition.winner-calculated.v1',
+    targetId: payload.targetId,
+    winnerSubmissionId: payload.winnerSubmissionId
+  });
+
+  rabbitmq.publish('competition.winner-calculated.v1', payload);
+}
+
 async function loadOpenTarget(targetId, authToken) {
   var target = await targetServiceClient.getTargetById(targetId, authToken);
 
@@ -261,5 +281,22 @@ exports.handleSubmissionUploadedEvent = async function handleSubmissionUploadedE
     submissionId: parsed.submissionId,
     scoreId: String(submission._id),
     similarityScore: similarityScore
+  };
+};
+
+exports.handleDeadlineReachedEvent = async function handleDeadlineReachedEvent(message) {
+  if (!message || !message.targetId || !message.deadlineAt) {
+    throw new Error('clock.deadline-reached.v1 missing required fields');
+  }
+
+  var winnerSubmission = await Submission.findOne({
+    targetId: message.targetId
+  }).sort({ similarityScore: -1, createdAt: 1 });
+
+  publishWinnerCalculated(message, winnerSubmission);
+
+  return {
+    targetId: message.targetId,
+    winnerSubmissionId: winnerSubmission ? String(winnerSubmission._id) : null
   };
 };

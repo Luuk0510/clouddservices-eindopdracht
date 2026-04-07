@@ -27,12 +27,34 @@ function subscribeToSubmissionUploaded() {
   });
 }
 
+function subscribeToDeadlineReached() {
+  rabbitmq.subscribe(
+    'score-service.clock.deadline-reached.v1',
+    'clock.deadline-reached.v1',
+    scoreService.handleDeadlineReachedEvent
+  ).then(function() {
+    logger.info('rabbitmq.subscribed', {
+      queue: 'score-service.clock.deadline-reached.v1',
+      routingKey: 'clock.deadline-reached.v1'
+    });
+  }).catch(function(error) {
+    logger.error('rabbitmq.subscribe_failed', {
+      queue: 'score-service.clock.deadline-reached.v1',
+      routingKey: 'clock.deadline-reached.v1',
+      message: error.message
+    });
+
+    setTimeout(subscribeToDeadlineReached, 5000);
+  });
+}
+
 connectDatabase(env.mongoUri).then(function() {
   rabbitmq.connect().catch(function() {
     // reconnect is handled in utils/rabbitmq
   });
 
   subscribeToSubmissionUploaded();
+  subscribeToDeadlineReached();
 
   var server = app.listen(env.port, function() {
     logger.info('server.started', { port: env.port });
