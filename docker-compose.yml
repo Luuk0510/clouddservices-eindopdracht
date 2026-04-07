@@ -8,6 +8,7 @@ services:
       - target-service
       - register-service
       - score-service
+      - rabbitmq
     ports:
       - "${GATEWAY_PORT:-3000}:3000"
     environment:
@@ -17,6 +18,7 @@ services:
       - TARGET_SERVICE_URL=${TARGET_SERVICE_URL:-http://target-service:3002}
       - REGISTER_SERVICE_URL=${REGISTER_SERVICE_URL:-http://register-service:3003}
       - SCORE_SERVICE_URL=${SCORE_SERVICE_URL:-http://score-service:3005}
+      - RABBITMQ_URL=${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672}
 
   auth-service:
     build:
