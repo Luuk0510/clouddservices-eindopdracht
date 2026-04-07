@@ -40,6 +40,7 @@ var authServiceUrl = process.env.AUTH_SERVICE_URL || 'http://auth-service:3001';
 var targetServiceUrl = process.env.TARGET_SERVICE_URL || 'http://target-service:3002';
 var registerServiceUrl = process.env.REGISTER_SERVICE_URL || 'http://register-service:3003';
 var scoreServiceUrl = process.env.SCORE_SERVICE_URL || 'http://score-service:3005';
+var mailServiceUrl = process.env.MAIL_SERVICE_URL || 'http://mail-service:3006';
 
 router.get('/health', function(req, res) {
   res.status(200).json({
@@ -60,6 +61,7 @@ router.use('/targets/:targetId/score', createPreservedPathProxy(scoreServiceUrl)
 router.use('/targets/:targetId/scores', createPreservedPathProxy(scoreServiceUrl));
 router.use('/score', createPreservedPathProxy(scoreServiceUrl));
 router.use('/register', createPreservedPathProxy(registerServiceUrl));
+router.use('/mail', createServiceProxy(mailServiceUrl));
 router.use('/targets', createServiceProxy(targetServiceUrl));
 
 module.exports = router;

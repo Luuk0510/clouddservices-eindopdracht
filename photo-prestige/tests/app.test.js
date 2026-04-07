@@ -122,6 +122,19 @@ describe('photo-prestige app', function() {
     });
   });
 
+  it('proxies mail routes to the mail service', async function() {
+    var response = await request(app)
+      .get('/api/v1/mail/health');
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      proxiedTo: 'http://mail-service:3006',
+      path: '/api/v1/mail/health',
+      method: 'GET',
+      body: {}
+    });
+  });
+
   it('renders the error page for unknown routes', async function() {
     var response = await request(app).get('/this-route-does-not-exist');
 
