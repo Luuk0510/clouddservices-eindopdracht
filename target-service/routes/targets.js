@@ -370,6 +370,16 @@ router.post('/:targetId/submissions', authenticate, authorizeRole('participant',
       totalScore: totalScore
     });
 
+    rabbitmq.publish('submission.uploaded.v1', {
+      submissionId: String(submission._id),
+      targetId: String(target._id),
+      userId: submission.userId,
+      userEmail: submission.userEmail,
+      imageUrl: submission.imageUrl,
+      targetImageUrl: target.imageUrl,
+      submittedAt: submission.createdAt.toISOString()
+    });
+
     res.status(201).json({
       message: 'Submission created',
       submission: submission

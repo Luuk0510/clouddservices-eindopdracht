@@ -74,6 +74,7 @@ services:
     depends_on:
       - score-mongodb
       - target-service
+      - rabbitmq
     ports:
       - "${SCORE_SERVICE_PORT:-3005}:3005"
     environment:
@@ -82,6 +83,7 @@ services:
       - MONGODB_URI=${SCORE_MONGODB_URI:-mongodb://score-mongodb:27017/score-service}
       - JWT_SECRET=${JWT_SECRET:-change-this-in-real-deployments}
       - TARGET_SERVICE_URL=${TARGET_SERVICE_URL:-http://target-service:3002}
+      - RABBITMQ_URL=${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672}
       - IMAGGA_API_KEY=${IMAGGA_API_KEY:-}
       - IMAGGA_API_SECRET=${IMAGGA_API_SECRET:-}
       - IMAGGA_API_BASE_URL=${IMAGGA_API_BASE_URL:-https://api.imagga.com/v2}

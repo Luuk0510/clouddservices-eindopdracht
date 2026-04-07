@@ -8,6 +8,7 @@
     "test": "jest --runInBand"
   },
   "dependencies": {
+    "amqplib": "^0.10.9",
     "express": "^4.22.1",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.18.1",

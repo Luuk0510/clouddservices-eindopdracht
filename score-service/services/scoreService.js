@@ -3,6 +3,8 @@ var env = require('../config/env');
 var imaggaClient = require('./imaggaClient');
 var targetServiceClient = require('./targetServiceClient');
 var HttpError = require('../utils/HttpError');
+var rabbitmq = require('../utils/rabbitmq');
+var logger = require('../utils/logger');
 
 function normalizeImageUrl(value) {
   return String(value || '').trim();
@@ -50,6 +52,53 @@ function serializeSubmission(submission) {
     similarityScore: submission.similarityScore,
     submittedAt: submission.createdAt
   };
+}
+
+function parseSubmissionUploadedMessage(message) {
+  if (!message || typeof message !== 'object') {
+    throw new Error('submission.uploaded.v1 message must be an object');
+  }
+
+  var targetId = String(message.targetId || '').trim();
+  var submissionId = String(message.submissionId || '').trim();
+  var userId = String(message.userId || '').trim();
+  var imageUrl = normalizeImageUrl(message.imageUrl);
+  var userEmail = String(message.userEmail || '').trim();
+  var targetImageUrl = normalizeImageUrl(message.targetImageUrl);
+
+  if (!targetId || !submissionId || !userId || !imageUrl || !targetImageUrl) {
+    throw new Error('submission.uploaded.v1 message is missing required fields');
+  }
+
+  return {
+    targetId: targetId,
+    submissionId: submissionId,
+    userId: userId,
+    userEmail: userEmail,
+    imageUrl: imageUrl,
+    targetImageUrl: targetImageUrl
+  };
+}
+
+function publishScoreCalculated(submission, sourceSubmissionId) {
+  var payload = {
+    scoreId: String(submission._id),
+    submissionId: sourceSubmissionId,
+    targetId: submission.targetId,
+    userId: submission.userId,
+    userEmail: submission.userEmail,
+    similarityScore: submission.similarityScore,
+    calculatedAt: submission.updatedAt.toISOString()
+  };
+  
+  logger.info('score.publishing', {
+    routingKey: 'score.calculated.v1',
+    scoreId: payload.scoreId,
+    submissionId: sourceSubmissionId,
+    similarityScore: payload.similarityScore
+  });
+  
+  rabbitmq.publish('score.calculated.v1', payload);
 }
 
 async function loadOpenTarget(targetId, authToken) {
@@ -168,5 +217,49 @@ exports.deleteSubmission = async function deleteSubmission(input) {
   return {
     message: 'Submission deleted',
     submissionId: submission._id
+  };
+};
+
+exports.handleSubmissionUploadedEvent = async function handleSubmissionUploadedEvent(message) {
+  logger.info('submission.received', {
+    routingKey: 'submission.uploaded.v1',
+    submissionId: message.submissionId,
+    targetId: message.targetId
+  });
+  
+  var parsed = parseSubmissionUploadedMessage(message);
+  var similarityScore = await calculateScore(parsed.targetImageUrl, parsed.imageUrl);
+
+  logger.info('score.calculated', {
+    submissionId: parsed.submissionId,
+    targetId: parsed.targetId,
+    similarityScore: similarityScore
+  });
+
+  var submission = await Submission.findOneAndUpdate({
+    sourceSubmissionId: parsed.submissionId
+  }, {
+    $set: {
+      targetId: parsed.targetId,
+      userId: parsed.userId,
+      userEmail: parsed.userEmail,
+      imageUrl: parsed.imageUrl,
+      similarityScore: similarityScore
+    },
+    $setOnInsert: {
+      sourceSubmissionId: parsed.submissionId
+    }
+  }, {
+    new: true,
+    upsert: true,
+    setDefaultsOnInsert: true
+  });
+
+  publishScoreCalculated(submission, parsed.submissionId);
+
+  return {
+    submissionId: parsed.submissionId,
+    scoreId: String(submission._id),
+    similarityScore: similarityScore
   };
 };
