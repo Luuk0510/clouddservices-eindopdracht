@@ -97,14 +97,14 @@ function subscribeToDeadlineReached() {
 }
 
 connectDatabase(env.mongoUri).then(function() {
-  rabbitmq.connect().catch(function() {
+  rabbitmq.connect().then(function() {
+    subscribeToRegistrationCreated();
+    subscribeToWinnerCalculated();
+    subscribeToDeadlineReminder();
+    subscribeToDeadlineReached();
+  }).catch(function() {
     // reconnect is handled in utils/rabbitmq
   });
-
-  subscribeToRegistrationCreated();
-  subscribeToWinnerCalculated();
-  subscribeToDeadlineReminder();
-  subscribeToDeadlineReached();
 
   var server = app.listen(env.port, function() {
     logger.info('server.started', { port: env.port });
