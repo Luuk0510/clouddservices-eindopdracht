@@ -56,3 +56,13 @@ exports.listUsers = async function listUsers() {
     users: users.map(serializeUser)
   };
 };
+
+exports.getUserById = async function getUserById(userId) {
+  var user = await User.findById(userId);
+
+  if (!user) {
+    return null;
+  }
+
+  return serializeUser(user);
+};

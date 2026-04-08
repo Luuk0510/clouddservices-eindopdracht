@@ -64,6 +64,12 @@
         </section>
 
         <section class="card">
+          <h2>Winner</h2>
+          <button id="winner-button" type="button">Load winner</button>
+          <pre id="winner-result">Nog geen request verstuurd.</pre>
+        </section>
+
+        <section class="card">
           <h2>Delete Submission</h2>
           <button id="delete-submission-button" type="button">Delete submission</button>
           <pre id="delete-submission-result">Nog geen request verstuurd.</pre>
@@ -211,6 +217,25 @@
           showJson('all-scores-result', result);
         } catch (error) {
           showJson('all-scores-result', { error: error.message });
+        }
+      });
+
+      document.getElementById('winner-button').addEventListener('click', async function() {
+        const targetId = getTargetId();
+
+        if (!targetId) {
+          showJson('winner-result', { message: 'Vul eerst een Target ID in.' });
+          return;
+        }
+
+        try {
+          const result = await requestJson('/api/v1/targets/' + encodeURIComponent(targetId) + '/winner', {
+            method: 'GET',
+            headers: buildAuthHeaders()
+          });
+          showJson('winner-result', result);
+        } catch (error) {
+          showJson('winner-result', { error: error.message });
         }
       });
 

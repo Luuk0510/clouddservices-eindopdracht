@@ -8,6 +8,7 @@
     "test": "jest --runInBand"
   },
   "dependencies": {
+    "amqplib": "^0.10.9",
     "cookie-parser": "~1.4.4",
     "debug": "~2.6.9",
     "ejs": "^5.0.1",

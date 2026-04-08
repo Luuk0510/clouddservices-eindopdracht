@@ -13,5 +13,6 @@ router.post('/register', validateAuthPayload, asyncHandler(authController.regist
 router.post('/login', validateAuthPayload, asyncHandler(authController.login));
 router.get('/me', authenticate, authController.me);
 router.get('/users', authenticate, authorizeRole('target-owner'), asyncHandler(authController.listUsers));
+router.get('/users/:userId', authenticate, asyncHandler(authController.getUserById));
 
 module.exports = router;

@@ -109,6 +109,19 @@ describe('photo-prestige app', function() {
     });
   });
 
+  it('proxies winner routes to the score service', async function() {
+    var response = await request(app)
+      .get('/api/v1/targets/target-123/winner');
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      proxiedTo: 'http://score-service:3005',
+      path: '/api/v1/targets/target-123/winner',
+      method: 'GET',
+      body: {}
+    });
+  });
+
   it('proxies target routes to the target service', async function() {
     var response = await request(app)
       .get('/api/v1/targets');

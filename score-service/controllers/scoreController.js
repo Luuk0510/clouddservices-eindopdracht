@@ -39,6 +39,12 @@ exports.getTargetScores = async function(req, res) {
   res.status(200).json(result);
 };
 
+exports.getTargetWinner = async function(req, res) {
+  var result = await scoreService.getWinnerForTarget(req.params.targetId, req.token);
+
+  res.status(200).json(result);
+};
+
 exports.deleteSubmission = async function(req, res) {
   var result = await scoreService.deleteSubmission({
     submissionId: req.params.submissionId,
