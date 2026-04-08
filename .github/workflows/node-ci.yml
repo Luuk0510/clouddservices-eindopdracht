@@ -3,12 +3,11 @@ name: Node CI
 on:
   push:
     branches:
-      - main
-      - develop
+      - '**'
   pull_request:
     branches:
-      - main
-      - develop
+      - '**'
+  workflow_dispatch:
 
 jobs:
   test-services:
@@ -21,6 +20,7 @@ jobs:
           - register-service
           - score-service
           - target-service
+          - clock-service
 
     defaults:
       run:
