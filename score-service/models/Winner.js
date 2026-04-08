@@ -15,6 +15,10 @@ var winnerSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  winnerUserEmail: {
+    type: String,
+    default: null
+  },
   similarityScore: {
     type: Number,
     default: null

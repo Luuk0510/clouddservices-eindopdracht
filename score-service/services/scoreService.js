@@ -2,6 +2,7 @@ var Submission = require('../models/Submission');
 var Winner = require('../models/Winner');
 var env = require('../config/env');
 var imaggaClient = require('./imaggaClient');
+var authServiceClient = require('./authServiceClient');
 var targetServiceClient = require('./targetServiceClient');
 var HttpError = require('../utils/HttpError');
 var rabbitmq = require('../utils/rabbitmq');
@@ -9,6 +10,17 @@ var logger = require('../utils/logger');
 
 function normalizeImageUrl(value) {
   return String(value || '').trim();
+}
+
+function usernameFromEmail(email) {
+  var normalized = String(email || '').trim();
+  var atIndex = normalized.indexOf('@');
+
+  if (atIndex <= 0) {
+    return null;
+  }
+
+  return normalized.slice(0, atIndex);
 }
 
 function calculateTagSimilarityScore(targetTags, submissionTags) {
@@ -108,6 +120,7 @@ function publishWinnerCalculated(message, winnerSubmission) {
     targetId: message.targetId,
     winnerSubmissionId: winnerSubmission ? String(winnerSubmission._id) : null,
     winnerUserId: winnerSubmission ? winnerSubmission.userId : null,
+    winnerUserEmail: winnerSubmission ? winnerSubmission.userEmail : null,
     similarityScore: winnerSubmission ? winnerSubmission.similarityScore : null,
     submittedAt: winnerSubmission ? winnerSubmission.createdAt.toISOString() : null,
     deadlineAt: message.deadlineAt,
@@ -125,11 +138,15 @@ function publishWinnerCalculated(message, winnerSubmission) {
   return payload;
 }
 
-function serializeWinner(winner) {
+function serializeWinner(winner, winnerUserEmail) {
+  var resolvedEmail = winnerUserEmail || winner.winnerUserEmail || null;
+
   return {
     targetId: winner.targetId,
     winnerSubmissionId: winner.winnerSubmissionId,
     winnerUserId: winner.winnerUserId,
+    winnerUserEmail: resolvedEmail,
+    username: usernameFromEmail(resolvedEmail) || winner.winnerUserId || null,
     similarityScore: winner.similarityScore,
     submittedAt: winner.submittedAt ? winner.submittedAt.toISOString() : null,
     deadlineAt: winner.deadlineAt.toISOString(),
@@ -317,6 +334,7 @@ exports.handleDeadlineReachedEvent = async function handleDeadlineReachedEvent(m
     $set: {
       winnerSubmissionId: payload.winnerSubmissionId,
       winnerUserId: payload.winnerUserId,
+      winnerUserEmail: payload.winnerUserEmail,
       similarityScore: payload.similarityScore,
       submittedAt: payload.submittedAt ? new Date(payload.submittedAt) : null,
       deadlineAt: new Date(payload.deadlineAt),
@@ -334,15 +352,31 @@ exports.handleDeadlineReachedEvent = async function handleDeadlineReachedEvent(m
   };
 };
 
-exports.getWinnerForTarget = async function getWinnerForTarget(targetId) {
+exports.getWinnerForTarget = async function getWinnerForTarget(targetId, authToken) {
   var winner = await Winner.findOne({ targetId: targetId });
 
   if (!winner) {
     throw new HttpError(404, 'Winner has not been calculated yet');
   }
 
+  var winnerUserEmail = winner.winnerUserEmail || null;
+
+  if (!winnerUserEmail && winner.winnerUserId) {
+    var user = await authServiceClient.getUserById(winner.winnerUserId, authToken);
+
+    if (user && user.email) {
+      winnerUserEmail = user.email;
+
+      await Winner.updateOne({ _id: winner._id }, {
+        $set: {
+          winnerUserEmail: winnerUserEmail
+        }
+      });
+    }
+  }
+
   return {
     targetId: targetId,
-    winner: serializeWinner(winner)
+    winner: serializeWinner(winner, winnerUserEmail)
   };
 };
