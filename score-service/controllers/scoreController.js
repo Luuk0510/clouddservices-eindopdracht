@@ -40,7 +40,7 @@ exports.getTargetScores = async function(req, res) {
 };
 
 exports.getTargetWinner = async function(req, res) {
-  var result = await scoreService.getWinnerForTarget(req.params.targetId);
+  var result = await scoreService.getWinnerForTarget(req.params.targetId, req.token);
 
   res.status(200).json(result);
 };
