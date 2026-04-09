@@ -35,10 +35,7 @@ connectDatabase(env.mongoUri).then(function() {
   });
 
   subscribeToTargetCreated();
-
-  clockService.restoreRunningClocks().catch(function(error) {
-    logger.error('clock.restore_failed', { message: error.message });
-  });
+  clockService.startPolling();
 
   var server = app.listen(env.port, function() {
     logger.info('server.started', { port: env.port });
@@ -47,7 +44,7 @@ connectDatabase(env.mongoUri).then(function() {
   function shutdown() {
     logger.info('server.stopping');
     server.close(function() {
-      clockService.stopAll();
+      clockService.stopPolling();
 
       rabbitmq.close().then(function() {
         mongoose.connection.close(false).then(function() {

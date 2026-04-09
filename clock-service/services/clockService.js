@@ -3,42 +3,8 @@ var env = require('../config/env');
 var rabbitmq = require('../utils/rabbitmq');
 var logger = require('../utils/logger');
 
-var MAX_TIMEOUT_MS = 2147483647;
-var timers = {};
-var reminderTimers = {};
-
-function clearTimer(targetId) {
-  if (timers[targetId]) {
-    clearTimeout(timers[targetId]);
-    delete timers[targetId];
-  }
-
-  if (reminderTimers[targetId]) {
-    clearTimeout(reminderTimers[targetId]);
-    delete reminderTimers[targetId];
-  }
-}
-
-function getRemainingMs(deadlineAt) {
-  return new Date(deadlineAt).getTime() - Date.now();
-}
-
-function scheduleInChunks(targetId, remainingMs) {
-  clearTimer(targetId);
-
-  var delay = Math.min(remainingMs, MAX_TIMEOUT_MS);
-
-  timers[targetId] = setTimeout(async function() {
-    delete timers[targetId];
-
-    if (remainingMs > MAX_TIMEOUT_MS) {
-      scheduleInChunks(targetId, remainingMs - MAX_TIMEOUT_MS);
-      return;
-    }
-
-    await reachDeadline(targetId);
-  }, delay);
-}
+var pollTimer = null;
+var pollInProgress = false;
 
 function publishDeadlineReached(clock) {
   rabbitmq.publish('clock.deadline-reached.v1', {
@@ -62,12 +28,12 @@ function publishDeadlineReminder(clock) {
   });
 }
 
-async function reachDeadline(targetId) {
+async function markDeadlineReached() {
   var reachedAt = new Date();
 
   var clock = await Clock.findOneAndUpdate({
-    targetId: targetId,
-    status: 'running'
+    status: 'running',
+    deadlineAt: { $lte: reachedAt }
   }, {
     $set: {
       status: 'reached',
@@ -78,60 +44,71 @@ async function reachDeadline(targetId) {
   });
 
   if (!clock) {
-    return;
+    return false;
   }
 
   logger.info('clock.deadline_reached.v1', {
-    targetId: targetId,
+    targetId: clock.targetId,
     deadlineAt: clock.deadlineAt.toISOString(),
     reachedAt: reachedAt.toISOString()
   });
 
   publishDeadlineReached(clock);
+  return true;
 }
 
-function scheduleReminder(clock) {
-  var reminderOffsetMs = env.deadlineReminderMinutes * 60 * 1000;
-  var reminderAtMs = new Date(clock.deadlineAt).getTime() - reminderOffsetMs;
-  var delay = reminderAtMs - Date.now();
+async function markReminderSent() {
+  var now = new Date();
+  var reminderThreshold = new Date(now.getTime() + env.deadlineReminderMinutes * 60 * 1000);
 
-  if (delay <= 0) {
+  var clock = await Clock.findOneAndUpdate({
+    status: 'running',
+    reminderSentAt: null,
+    deadlineAt: {
+      $gt: now,
+      $lte: reminderThreshold
+    }
+  }, {
+    $set: {
+      reminderSentAt: now
+    }
+  }, {
+    new: true,
+    sort: { deadlineAt: 1 }
+  });
+
+  if (!clock) {
+    return false;
+  }
+
+  publishDeadlineReminder(clock);
+
+  logger.info('clock.deadline_reminder.v1', {
+    targetId: clock.targetId,
+    deadlineAt: new Date(clock.deadlineAt).toISOString()
+  });
+
+  return true;
+}
+
+async function processDueClocks() {
+  if (pollInProgress || !rabbitmq.isReady()) {
     return;
   }
 
-  if (reminderTimers[clock.targetId]) {
-    clearTimeout(reminderTimers[clock.targetId]);
+  pollInProgress = true;
+
+  try {
+    while (await markReminderSent()) {
+      // Keep draining due reminders in the current poll cycle.
+    }
+
+    while (await markDeadlineReached()) {
+      // Keep draining due deadlines in the current poll cycle.
+    }
+  } finally {
+    pollInProgress = false;
   }
-
-  reminderTimers[clock.targetId] = setTimeout(function() {
-    delete reminderTimers[clock.targetId];
-
-    publishDeadlineReminder(clock);
-
-    logger.info('clock.deadline_reminder.v1', {
-      targetId: clock.targetId,
-      deadlineAt: new Date(clock.deadlineAt).toISOString()
-    });
-  }, delay);
-}
-
-function scheduleClock(clock) {
-  var remainingMs = getRemainingMs(clock.deadlineAt);
-
-  if (remainingMs <= 0) {
-    return reachDeadline(clock.targetId);
-  }
-
-  scheduleInChunks(clock.targetId, remainingMs);
-  scheduleReminder(clock);
-
-  logger.info('clock.scheduled', {
-    targetId: clock.targetId,
-    deadlineAt: new Date(clock.deadlineAt).toISOString(),
-    remainingMs: remainingMs
-  });
-
-  return Promise.resolve();
 }
 
 exports.handleTargetCreatedEvent = async function handleTargetCreatedEvent(message) {
@@ -153,6 +130,7 @@ exports.handleTargetCreatedEvent = async function handleTargetCreatedEvent(messa
       ownerEmail: message.ownerEmail || '',
       deadlineAt: deadlineAt,
       status: 'running',
+      reminderSentAt: null,
       reachedAt: null
     },
     $setOnInsert: {
@@ -164,25 +142,40 @@ exports.handleTargetCreatedEvent = async function handleTargetCreatedEvent(messa
     setDefaultsOnInsert: true
   });
 
-  await scheduleClock(clock);
-};
-
-exports.restoreRunningClocks = async function restoreRunningClocks() {
-  var runningClocks = await Clock.find({ status: 'running' });
-
-  for (var i = 0; i < runningClocks.length; i += 1) {
-    await scheduleClock(runningClocks[i]);
-  }
-
-  logger.info('clock.restore_completed', {
-    restoredCount: runningClocks.length
+  logger.info('clock.saved', {
+    targetId: clock.targetId,
+    deadlineAt: clock.deadlineAt.toISOString(),
+    reminderSentAt: clock.reminderSentAt ? clock.reminderSentAt.toISOString() : null
   });
 };
 
-exports.stopAll = function stopAll() {
-  var targetIds = Object.keys(timers);
-
-  for (var i = 0; i < targetIds.length; i += 1) {
-    clearTimer(targetIds[i]);
+exports.startPolling = function startPolling() {
+  if (pollTimer) {
+    return;
   }
+
+  processDueClocks().catch(function(error) {
+    logger.error('clock.poll_failed', { message: error.message });
+  });
+
+  pollTimer = setInterval(function() {
+    processDueClocks().catch(function(error) {
+      logger.error('clock.poll_failed', { message: error.message });
+    });
+  }, env.pollIntervalMs);
+
+  logger.info('clock.polling_started', {
+    pollIntervalMs: env.pollIntervalMs
+  });
+};
+
+exports.stopPolling = function stopPolling() {
+  if (!pollTimer) {
+    return;
+  }
+
+  clearInterval(pollTimer);
+  pollTimer = null;
+
+  logger.info('clock.polling_stopped');
 };

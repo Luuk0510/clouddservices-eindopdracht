@@ -126,5 +126,8 @@ module.exports = {
   connect: connect,
   publish: publish,
   subscribe: subscribe,
-  close: close
+  close: close,
+  isReady: function isReady() {
+    return Boolean(_channel);
+  }
 };
