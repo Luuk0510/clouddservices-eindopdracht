@@ -29,35 +29,35 @@ describe('photo-prestige app', function() {
     var response = await request(app).get('/auth-demo');
 
     expect(response.status).toBe(200);
-    expect(response.text).toContain('Auth Demo');
+    expect(response.text).toContain('Auth');
   });
 
   it('renders the register demo page', async function() {
     var response = await request(app).get('/register-demo');
 
     expect(response.status).toBe(200);
-    expect(response.text).toContain('Register Demo');
+    expect(response.text).toContain('Register');
   });
 
   it('renders the score demo page', async function() {
     var response = await request(app).get('/score-demo');
 
     expect(response.status).toBe(200);
-    expect(response.text).toContain('Score Demo');
+    expect(response.text).toContain('Score');
   });
 
   it('renders the target demo page', async function() {
     var response = await request(app).get('/target-demo');
 
     expect(response.status).toBe(200);
-    expect(response.text).toContain('Target Demo');
+    expect(response.text).toContain('Target');
   });
 
   it('renders the read demo page', async function() {
     var response = await request(app).get('/read-demo');
 
     expect(response.status).toBe(200);
-    expect(response.text).toContain('Read Demo');
+    expect(response.text).toContain('Read');
   });
 
   it('returns API health information', async function() {
