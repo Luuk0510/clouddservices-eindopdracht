@@ -13,10 +13,10 @@
         <a class="nav-link" href="/score-demo">Score Demo</a>
         <a class="nav-link active-link" href="/target-demo">Target Demo</a>
         <a class="nav-link" href="/read-demo">Read Demo</a>
+        <a class="nav-link" href="/api-docs">API Docs</a>
       </nav>
 
       <section class="hero">
-        <p class="eyebrow">Minimal Demo GUI</p>
         <h1><%= title %></h1>
         <p class="intro">Gebruik deze pagina om de Target service via de API Gateway te testen. Login eerst op de Auth Demo pagina zodat er een JWT in localStorage staat.</p>
       </section>
@@ -53,6 +53,14 @@
             <label for="target-city">Stad</label>
             <input id="target-city" name="city" type="text" placeholder="Den Bosch" />
 
+            <label for="target-location-description">Location description</label>
+            <input
+              id="target-location-description"
+              name="locationDescription"
+              type="text"
+              placeholder="Bij het standbeeld op het plein"
+            />
+
             <label for="target-lat">Latitude</label>
             <input id="target-lat" name="lat" type="number" step="any" placeholder="51.6889" required />
 
@@ -71,17 +79,25 @@
         </section>
 
         <section class="card">
-          <h2>Target detail / verwijderen</h2>
+          <h2>Target detail</h2>
           <form id="target-detail-form">
-            <label for="target-id">Target ID</label>
-            <input id="target-id" name="targetId" type="text" placeholder="Mongo ObjectId" required />
+            <label for="target-detail-id">Target ID</label>
+            <input id="target-detail-id" name="targetId" type="text" placeholder="Mongo ObjectId" required />
 
-            <div class="card-header">
-              <button id="target-get-button" type="submit">Detail ophalen</button>
-              <button id="target-delete-button" type="button" data-role-required="target-owner">Verwijderen</button>
-            </div>
+            <button id="target-get-button" type="submit">Detail ophalen</button>
           </form>
           <pre id="target-detail-result">Nog geen request verstuurd.</pre>
+        </section>
+
+        <section class="card" data-role-required="target-owner">
+          <h2>Target verwijderen</h2>
+          <form id="target-delete-form">
+            <label for="target-delete-id">Target ID</label>
+            <input id="target-delete-id" name="targetId" type="text" placeholder="Mongo ObjectId" required />
+
+            <button id="target-delete-button" type="button">Verwijderen</button>
+          </form>
+          <pre id="target-delete-result">Nog geen request verstuurd.</pre>
         </section>
       </section>
     </main>
@@ -201,6 +217,7 @@
           title: formData.get('title'),
           imageUrl: formData.get('imageUrl'),
           city: formData.get('city'),
+          locationDescription: formData.get('locationDescription'),
           lat: Number(formData.get('lat')),
           lng: Number(formData.get('lng')),
           radiusMeters: Number(formData.get('radiusMeters')),
@@ -222,7 +239,7 @@
       document.getElementById('target-detail-form').addEventListener('submit', async function(event) {
         event.preventDefault();
 
-        const targetId = String(document.getElementById('target-id').value || '').trim();
+        const targetId = String(document.getElementById('target-detail-id').value || '').trim();
         if (!targetId) {
           showJson('target-detail-result', { message: 'Target ID is verplicht.' });
           return;
@@ -237,9 +254,9 @@
       });
 
       document.getElementById('target-delete-button').addEventListener('click', async function() {
-        const targetId = String(document.getElementById('target-id').value || '').trim();
+        const targetId = String(document.getElementById('target-delete-id').value || '').trim();
         if (!targetId) {
-          showJson('target-detail-result', { message: 'Vul eerst een Target ID in.' });
+          showJson('target-delete-result', { message: 'Vul eerst een Target ID in.' });
           return;
         }
 
@@ -248,9 +265,9 @@
             method: 'DELETE',
             headers: buildAuthHeaders()
           });
-          showJson('target-detail-result', result);
+          showJson('target-delete-result', result);
         } catch (error) {
-          showJson('target-detail-result', { error: error.message });
+          showJson('target-delete-result', { error: error.message });
         }
       });
 

@@ -42,6 +42,12 @@ async function ensureTargetAllowsRegistration(targetId, authToken) {
 
   return {
     targetId: target.targetId,
+    title: target.title,
+    description: target.description,
+    imageUrl: target.imageUrl,
+    city: target.city,
+    locationDescription: target.locationDescription,
+    radiusMeters: target.radiusMeters,
     ownerId: target.ownerId,
     deadline: deadline,
     status: target.status
@@ -79,6 +85,13 @@ exports.createRegistration = async function createRegistration(input) {
   rabbitmq.publish('registration.created', {
     registrationId: String(registration._id),
     targetId: registration.targetId,
+    targetTitle: target.title,
+    targetDescription: target.description,
+    targetImageUrl: target.imageUrl,
+    targetCity: target.city,
+    targetLocationDescription: target.locationDescription,
+    targetRadiusMeters: target.radiusMeters,
+    targetDeadline: target.deadline.toISOString(),
     userId: registration.userId,
     userEmail: registration.userEmail
   });

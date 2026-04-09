@@ -142,13 +142,26 @@ describe('photo-prestige app', function() {
     });
   });
 
+  it('proxies mail routes to the mail service', async function() {
+    var response = await request(app)
+      .get('/api/v1/mail/health');
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      proxiedTo: 'http://mail-service:3006',
+      path: '/api/v1/mail/health',
+      method: 'GET',
+      body: {}
+    });
+  });
+
   it('proxies read routes to the read service', async function() {
     var response = await request(app)
       .get('/api/v1/read/contests/active?city=Eindhoven');
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({
-      proxiedTo: 'http://read-service:3006',
+      proxiedTo: 'http://read-service:3007',
       path: '/api/v1/read/contests/active?city=Eindhoven',
       method: 'GET',
       body: {}
