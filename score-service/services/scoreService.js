@@ -3,6 +3,7 @@ var Winner = require('../models/Winner');
 var env = require('../config/env');
 var imaggaClient = require('./imaggaClient');
 var authServiceClient = require('./authServiceClient');
+var registerServiceClient = require('./registerServiceClient');
 var targetServiceClient = require('./targetServiceClient');
 var HttpError = require('../utils/HttpError');
 var rabbitmq = require('../utils/rabbitmq');
@@ -176,7 +177,12 @@ async function loadOpenTarget(targetId, authToken) {
 
 exports.createSubmission = async function createSubmission(input) {
   var target = await loadOpenTarget(input.targetId, input.authToken);
+  var hasActiveRegistration = await registerServiceClient.hasActiveRegistration(input.targetId, input.authToken);
   var imageUrl = normalizeImageUrl(input.body.imageUrl);
+
+  if (!hasActiveRegistration) {
+    throw new HttpError(403, 'You must register for this target before creating a submission');
+  }
 
   if (imageUrl === normalizeImageUrl(target.imageUrl)) {
     throw new HttpError(400, 'Submission must not use the exact same image URL as the target');
