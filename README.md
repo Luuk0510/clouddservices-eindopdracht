@@ -15,6 +15,7 @@ Deze applicatie is gebouwd volgens een **Microservices Architectuur** om schaalb
 * **Score Service:** Voert de AI-analyse uit via externe API's (Google Vision / Imagga) en berekent de winnaar.
 * **Mail Service:** Verstuurt transactionele e-mails (bevestigingen, herinneringen en uitslagen).
 * **Clock Service:** Monitort deadlines en triggert het afsluiten van wedstrijden.
+* **Read Service:** Levert leesoverzichten, zoals een lijst van alle actieve wedstrijden.
 
 ### Cloud Stack & Tools:
 * **Runtime:** Node.js met Express.js

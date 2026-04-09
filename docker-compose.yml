@@ -8,6 +8,7 @@ services:
       - target-service
       - register-service
       - score-service
+      - read-service
       - rabbitmq
     ports:
       - "${GATEWAY_PORT:-3000}:3000"
@@ -18,7 +19,21 @@ services:
       - TARGET_SERVICE_URL=${TARGET_SERVICE_URL:-http://target-service:3002}
       - REGISTER_SERVICE_URL=${REGISTER_SERVICE_URL:-http://register-service:3003}
       - SCORE_SERVICE_URL=${SCORE_SERVICE_URL:-http://score-service:3005}
+      - READ_SERVICE_URL=${READ_SERVICE_URL:-http://read-service:3006}
       - RABBITMQ_URL=${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672}
+
+  read-service:
+    build:
+      context: ./read-service
+    container_name: photo-prestige-read-service
+    depends_on:
+      - target-service
+    ports:
+      - "${READ_SERVICE_PORT:-3006}:3006"
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - PORT=3006
+      - TARGET_SERVICE_URL=${TARGET_SERVICE_URL:-http://target-service:3002}
 
   auth-service:
     build:
