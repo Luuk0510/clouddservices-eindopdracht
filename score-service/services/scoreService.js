@@ -117,7 +117,7 @@ function publishScoreCalculated(submission, sourceSubmissionId) {
 
 function publishWinnerCalculated(message, winnerSubmission) {
   var calculatedAt = new Date();
-  var payload = {
+  return {
     targetId: message.targetId,
     winnerSubmissionId: winnerSubmission ? String(winnerSubmission._id) : null,
     winnerUserId: winnerSubmission ? winnerSubmission.userId : null,
@@ -127,16 +127,6 @@ function publishWinnerCalculated(message, winnerSubmission) {
     deadlineAt: message.deadlineAt,
     calculatedAt: calculatedAt.toISOString()
   };
-
-  logger.info('competition.publishing', {
-    routingKey: 'competition.winner-calculated.v1',
-    targetId: payload.targetId,
-    winnerSubmissionId: payload.winnerSubmissionId
-  });
-
-  rabbitmq.publish('competition.winner-calculated.v1', payload);
-
-  return payload;
 }
 
 function serializeWinner(winner, winnerUserEmail) {
@@ -333,11 +323,11 @@ exports.handleDeadlineReachedEvent = async function handleDeadlineReachedEvent(m
   }).sort({ similarityScore: -1, createdAt: 1 });
 
   var payload = publishWinnerCalculated(message, winnerSubmission);
-
-  await Winner.findOneAndUpdate({
+  var writeResult = await Winner.updateOne({
     targetId: message.targetId
   }, {
-    $set: {
+    $setOnInsert: {
+      targetId: message.targetId,
       winnerSubmissionId: payload.winnerSubmissionId,
       winnerUserId: payload.winnerUserId,
       winnerUserEmail: payload.winnerUserEmail,
@@ -347,14 +337,28 @@ exports.handleDeadlineReachedEvent = async function handleDeadlineReachedEvent(m
       calculatedAt: new Date(payload.calculatedAt)
     }
   }, {
-    upsert: true,
-    new: true,
-    setDefaultsOnInsert: true
+    upsert: true
   });
+
+  if (writeResult.upsertedCount === 1) {
+    logger.info('competition.publishing', {
+      routingKey: 'competition.winner-calculated.v1',
+      targetId: payload.targetId,
+      winnerSubmissionId: payload.winnerSubmissionId
+    });
+
+    rabbitmq.publish('competition.winner-calculated.v1', payload);
+  } else {
+    logger.info('competition.publish_skipped', {
+      routingKey: 'competition.winner-calculated.v1',
+      targetId: payload.targetId
+    });
+  }
 
   return {
     targetId: message.targetId,
-    winnerSubmissionId: winnerSubmission ? String(winnerSubmission._id) : null
+    winnerSubmissionId: winnerSubmission ? String(winnerSubmission._id) : null,
+    published: writeResult.upsertedCount === 1
   };
 };
 

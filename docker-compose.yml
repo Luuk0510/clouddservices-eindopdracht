@@ -22,6 +22,8 @@ services:
       - SCORE_SERVICE_URL=${SCORE_SERVICE_URL:-http://score-service:3005}
       - READ_SERVICE_URL=${READ_SERVICE_URL:-http://read-service:3007}
       - RABBITMQ_URL=${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672}
+      - RABBITMQ_EXCHANGE=${RABBITMQ_EXCHANGE:-photo-prestige}
+      - RABBITMQ_RECONNECT_DELAY_MS=${RABBITMQ_RECONNECT_DELAY_MS:-5000}
       - MAIL_SERVICE_URL=${MAIL_SERVICE_URL:-http://mail-service:3006}
 
   read-service:
@@ -61,6 +63,8 @@ services:
       - MONGODB_URI=${TARGET_MONGODB_URI:-mongodb://mongodb:27017/photo-prestige}
       - JWT_SECRET=${JWT_SECRET:-change-this-in-real-deployments}
       - RABBITMQ_URL=${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672}
+      - RABBITMQ_EXCHANGE=${RABBITMQ_EXCHANGE:-photo-prestige}
+      - RABBITMQ_RECONNECT_DELAY_MS=${RABBITMQ_RECONNECT_DELAY_MS:-5000}
 
   register-service:
     build:
@@ -77,6 +81,8 @@ services:
       
       - TARGET_SERVICE_URL=${TARGET_SERVICE_URL:-http://target-service:3002}
       - RABBITMQ_URL=${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672}
+      - RABBITMQ_EXCHANGE=${RABBITMQ_EXCHANGE:-photo-prestige}
+      - RABBITMQ_RECONNECT_DELAY_MS=${RABBITMQ_RECONNECT_DELAY_MS:-5000}
 
   score-service:
     build:
@@ -95,6 +101,8 @@ services:
       - REGISTER_SERVICE_URL=${REGISTER_SERVICE_URL:-http://register-service:3003}
       - TARGET_SERVICE_URL=${TARGET_SERVICE_URL:-http://target-service:3002}
       - RABBITMQ_URL=${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672}
+      - RABBITMQ_EXCHANGE=${RABBITMQ_EXCHANGE:-photo-prestige}
+      - RABBITMQ_RECONNECT_DELAY_MS=${RABBITMQ_RECONNECT_DELAY_MS:-5000}
       - IMAGGA_API_KEY=${IMAGGA_API_KEY:-}
       - IMAGGA_API_SECRET=${IMAGGA_API_SECRET:-}
       - IMAGGA_API_BASE_URL=${IMAGGA_API_BASE_URL:-https://api.imagga.com/v2}
@@ -111,6 +119,8 @@ services:
       - PORT=3004
       - MONGODB_URI=${CLOCK_MONGODB_URI:-mongodb://clock-mongodb:27017/clock-service}
       - RABBITMQ_URL=${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672}
+      - RABBITMQ_EXCHANGE=${RABBITMQ_EXCHANGE:-photo-prestige}
+      - RABBITMQ_RECONNECT_DELAY_MS=${RABBITMQ_RECONNECT_DELAY_MS:-5000}
       - DEADLINE_REMINDER_MINUTES=${DEADLINE_REMINDER_MINUTES:-60}
 
   mail-service:
