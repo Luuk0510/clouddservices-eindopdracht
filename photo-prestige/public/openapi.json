@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Photo Prestige API Gateway",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "description": "Complete gateway documentation for all available API endpoints.\\n\\nRole model: participant, target-owner.\\n\\nEach operation includes role access in the description and x-allowed-roles."
   },
   "servers": [
@@ -16,7 +16,8 @@
     { "name": "Auth" },
     { "name": "Targets" },
     { "name": "Register" },
-    { "name": "Score" }
+    { "name": "Score" },
+    { "name": "Read" }
   ],
   "components": {
     "securitySchemes": {
@@ -135,6 +136,17 @@
         "x-allowed-roles": ["public"],
         "responses": {
           "200": { "description": "Score service is healthy" }
+        }
+      }
+    },
+    "/api/v1/read/health": {
+      "get": {
+        "tags": ["Read"],
+        "summary": "Read service health",
+        "description": "Allowed roles: public.",
+        "x-allowed-roles": ["public"],
+        "responses": {
+          "200": { "description": "Read service is healthy" }
         }
       }
     },
@@ -524,6 +536,29 @@
         "responses": {
           "200": { "description": "My registrations" },
           "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/api/v1/read/contests/active": {
+      "get": {
+        "tags": ["Read"],
+        "summary": "List active contests",
+        "description": "Allowed roles: public. Geeft een leesoverzicht van alle actieve wedstrijden.",
+        "x-allowed-roles": ["public"],
+        "parameters": [
+          { "name": "city", "in": "query", "schema": { "type": "string" } },
+          { "name": "ownerId", "in": "query", "schema": { "type": "string" } },
+          { "name": "lat", "in": "query", "schema": { "type": "number" } },
+          { "name": "lng", "in": "query", "schema": { "type": "number" } },
+          { "name": "radiusMeters", "in": "query", "schema": { "type": "number" } },
+          { "name": "radiusKm", "in": "query", "schema": { "type": "number" } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer" } },
+          { "name": "skip", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Active contests overview" },
+          "400": { "description": "Invalid query" },
+          "502": { "description": "Upstream service unavailable" }
         }
       }
     },
