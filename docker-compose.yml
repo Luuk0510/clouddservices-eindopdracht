@@ -140,8 +140,8 @@ services:
       - MAIL_MONGODB_URI=${MAIL_MONGODB_URI:-mongodb://mail-mongodb:27017/mail-service}
       - JWT_SECRET=${JWT_SECRET:-change-this-in-real-deployments}
       - RABBITMQ_URL=${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672}
-      - RESEND_API_KEY=${RESEND_API_KEY:-}
-      - MAIL_FROM=${MAIL_FROM:-Photo Prestige <onboarding@resend.dev>}
+      - SENDGRID_API_KEY=${SENDGRID_API_KEY:-}
+      - MAIL_FROM=${MAIL_FROM:-Photo Prestige <noreply@example.com>}
 
   mongodb:
     image: mongo:7
