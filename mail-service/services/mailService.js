@@ -1,5 +1,5 @@
 var env = require('../config/env');
-var resendClient = require('./resendClient');
+var sendgridClient = require('./sendgridClient');
 var HttpError = require('../utils/HttpError');
 var logger = require('../utils/logger');
 var buildRegistrationEmail = require('../templates/registrationEmail');
@@ -14,7 +14,7 @@ async function deliverMail(options) {
     throw new HttpError(400, 'A recipient email address is required');
   }
 
-  var response = await resendClient.sendEmail({
+  var response = await sendgridClient.sendEmail({
     from: env.mailFrom,
     to: to,
     subject: options.subject,
@@ -30,8 +30,8 @@ async function deliverMail(options) {
   return {
     to: to,
     subject: options.subject,
-    provider: 'resend',
-    id: response && response.data ? response.data.id : null
+    provider: 'sendgrid',
+    id: response ? response.id : null
   };
 }
 

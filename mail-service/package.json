@@ -8,12 +8,12 @@
     "test": "jest --runInBand"
   },
   "dependencies": {
+    "@sendgrid/mail": "^8.1.6",
     "amqplib": "^0.10.9",
     "express": "^4.22.1",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.18.1",
-    "morgan": "^1.10.1",
-    "resend": "^4.6.0"
+    "morgan": "^1.10.1"
   },
   "devDependencies": {
     "jest": "^30.2.0",
