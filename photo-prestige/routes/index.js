@@ -22,6 +22,10 @@ router.get('/target-demo', function(req, res, next) {
   res.render('target-demo', { title: 'Target Demo' });
 });
 
+router.get('/read-demo', function(req, res, next) {
+  res.render('read-demo', { title: 'Read Demo' });
+});
+
 router.get('/api-docs', function(req, res, next) {
   res.redirect('/swagger.html');
 });
