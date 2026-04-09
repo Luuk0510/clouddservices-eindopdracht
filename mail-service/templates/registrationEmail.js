@@ -1,5 +1,6 @@
 module.exports = function buildRegistrationEmail(payload) {
   var title = payload.targetTitle || 'Untitled target';
+  var imageLink = payload.targetImageUrl ? 'View target image: ' + payload.targetImageUrl : null;
   var subject = 'Registration confirmed: ' + title;
   var text = [
     'Your registration has been received.',
@@ -10,9 +11,10 @@ module.exports = function buildRegistrationEmail(payload) {
     'City: ' + (payload.targetCity || 'unknown'),
     'Location: ' + (payload.targetLocationDescription || 'unknown'),
     'Radius: ' + (payload.targetRadiusMeters ? payload.targetRadiusMeters + ' meters' : 'unknown'),
+    imageLink,
     '',
     'Registration ID: ' + payload.registrationId
-  ].join('\n');
+  ].filter(Boolean).join('\n');
   var html = [
     '<p>Your registration has been received.</p>',
     '<p><strong>' + title + '</strong></p>',
@@ -22,6 +24,7 @@ module.exports = function buildRegistrationEmail(payload) {
     '<li><strong>City:</strong> ' + (payload.targetCity || 'unknown') + '</li>',
     '<li><strong>Location:</strong> ' + (payload.targetLocationDescription || 'unknown') + '</li>',
     '<li><strong>Radius:</strong> ' + (payload.targetRadiusMeters ? payload.targetRadiusMeters + ' meters' : 'unknown') + '</li>',
+    payload.targetImageUrl ? '<li><strong>Target image:</strong> <a href="' + payload.targetImageUrl + '">View target image</a></li>' : '',
     '</ul>',
     '<p><strong>Registration ID:</strong> ' + payload.registrationId + '</p>'
   ].join('');

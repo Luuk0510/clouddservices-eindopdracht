@@ -24,6 +24,10 @@ var mailRegistrationSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  targetImageUrl: {
+    type: String,
+    default: ''
+  },
   targetCity: {
     type: String,
     default: ''

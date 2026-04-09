@@ -7,16 +7,8 @@ var buildReminderEmail = require('../templates/reminderEmail');
 var buildDeadlineClosedEmail = require('../templates/deadlineClosedEmail');
 var buildScoreEmail = require('../templates/scoreEmail');
 
-function resolveRecipient(to) {
-  if (env.forceTestRecipient && env.mailTestTo) {
-    return env.mailTestTo;
-  }
-
-  return String(to || '').trim();
-}
-
 async function deliverMail(options) {
-  var to = resolveRecipient(options.to);
+  var to = String(options.to || '').trim();
 
   if (!to) {
     throw new HttpError(400, 'A recipient email address is required');
@@ -45,7 +37,7 @@ async function deliverMail(options) {
 
 exports.sendTestMail = async function sendTestMail(input) {
   return deliverMail({
-    to: input.to || input.user.email || env.mailTestTo,
+    to: input.to || input.user.email,
     subject: input.subject || 'Photo Prestige test email',
     text: input.text || 'This is a test email from the mail-service.',
     html: input.html || '<p>This is a test email from the mail-service.</p>'

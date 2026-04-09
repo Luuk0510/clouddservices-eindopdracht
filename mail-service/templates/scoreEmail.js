@@ -1,6 +1,7 @@
 module.exports = function buildScoreEmail(payload) {
   var targetId = payload.targetId || 'unknown target';
   var title = payload.targetTitle || 'Untitled target';
+  var imageLink = payload.targetImageUrl ? 'View target image: ' + payload.targetImageUrl : null;
   var subject = 'Score available';
   var resultText = payload.isWinner ? 'You won this competition.' : 'The competition result is now available.';
   var text = [
@@ -11,9 +12,10 @@ module.exports = function buildScoreEmail(payload) {
     'Similarity score: ' + (payload.similarityScore !== undefined && payload.similarityScore !== null ? payload.similarityScore + '%' : 'unknown'),
     'City: ' + (payload.targetCity || 'unknown'),
     'Location: ' + (payload.targetLocationDescription || 'unknown'),
+    imageLink,
     '',
     resultText
-  ].join('\n');
+  ].filter(Boolean).join('\n');
   var html = [
     '<p>The score is now available.</p>',
     '<p><strong>' + title + '</strong></p>',
@@ -22,6 +24,7 @@ module.exports = function buildScoreEmail(payload) {
     '<li><strong>Similarity score:</strong> ' + (payload.similarityScore !== undefined && payload.similarityScore !== null ? payload.similarityScore + '%' : 'unknown') + '</li>',
     '<li><strong>City:</strong> ' + (payload.targetCity || 'unknown') + '</li>',
     '<li><strong>Location:</strong> ' + (payload.targetLocationDescription || 'unknown') + '</li>',
+    payload.targetImageUrl ? '<li><strong>Target image:</strong> <a href="' + payload.targetImageUrl + '">View target image</a></li>' : '',
     '</ul>',
     '<p>' + resultText + '</p>'
   ].join('');

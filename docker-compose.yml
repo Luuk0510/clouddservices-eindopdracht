@@ -126,8 +126,6 @@ services:
       - RABBITMQ_URL=${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672}
       - RESEND_API_KEY=${RESEND_API_KEY:-}
       - MAIL_FROM=${MAIL_FROM:-Photo Prestige <onboarding@resend.dev>}
-      - MAIL_TEST_TO=${MAIL_TEST_TO:-}
-      - MAIL_FORCE_TEST_RECIPIENT=${MAIL_FORCE_TEST_RECIPIENT:-true}
 
   mongodb:
     image: mongo:7

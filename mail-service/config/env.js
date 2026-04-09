@@ -4,7 +4,5 @@ module.exports = {
   rabbitmqUrl: process.env.RABBITMQ_URL || 'amqp://guest:guest@rabbitmq:5672',
   jwtSecret: process.env.JWT_SECRET || 'dev-secret-change-me',
   resendApiKey: process.env.RESEND_API_KEY || '',
-  mailFrom: process.env.MAIL_FROM || 'Photo Prestige <onboarding@resend.dev>',
-  mailTestTo: process.env.MAIL_TEST_TO || '',
-  forceTestRecipient: String(process.env.MAIL_FORCE_TEST_RECIPIENT || 'true').toLowerCase() === 'true'
+  mailFrom: process.env.MAIL_FROM || 'Photo Prestige <onboarding@resend.dev>'
 };

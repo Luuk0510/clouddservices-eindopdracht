@@ -12,6 +12,7 @@ function normalizeTarget(targetId, payload) {
     targetId: source.targetId || source._id || targetId,
     title: source.title || '',
     description: source.description || '',
+    imageUrl: source.imageUrl || '',
     city: source.city || '',
     locationDescription: source.locationDescription || '',
     radiusMeters: source.radiusMeters,
