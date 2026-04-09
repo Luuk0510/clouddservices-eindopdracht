@@ -41,7 +41,7 @@ var targetServiceUrl = process.env.TARGET_SERVICE_URL || 'http://target-service:
 var registerServiceUrl = process.env.REGISTER_SERVICE_URL || 'http://register-service:3003';
 var scoreServiceUrl = process.env.SCORE_SERVICE_URL || 'http://score-service:3005';
 var mailServiceUrl = process.env.MAIL_SERVICE_URL || 'http://mail-service:3006';
-var readServiceUrl = process.env.READ_SERVICE_URL || 'http://read-service:3006';
+var readServiceUrl = process.env.READ_SERVICE_URL || 'http://read-service:3007';
 
 router.get('/health', function(req, res) {
   res.status(200).json({

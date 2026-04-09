@@ -20,7 +20,7 @@ services:
       - TARGET_SERVICE_URL=${TARGET_SERVICE_URL:-http://target-service:3002}
       - REGISTER_SERVICE_URL=${REGISTER_SERVICE_URL:-http://register-service:3003}
       - SCORE_SERVICE_URL=${SCORE_SERVICE_URL:-http://score-service:3005}
-      - READ_SERVICE_URL=${READ_SERVICE_URL:-http://read-service:3006}
+      - READ_SERVICE_URL=${READ_SERVICE_URL:-http://read-service:3007}
       - RABBITMQ_URL=${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672}
       - MAIL_SERVICE_URL=${MAIL_SERVICE_URL:-http://mail-service:3006}
 
@@ -31,10 +31,10 @@ services:
     depends_on:
       - target-service
     ports:
-      - "${READ_SERVICE_PORT:-3006}:3006"
+      - "${READ_SERVICE_PORT:-3007}:3007"
     environment:
       - NODE_ENV=${NODE_ENV:-production}
-      - PORT=3006
+      - PORT=3007
       - TARGET_SERVICE_URL=${TARGET_SERVICE_URL:-http://target-service:3002}
 
   auth-service:

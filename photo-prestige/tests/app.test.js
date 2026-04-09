@@ -161,7 +161,7 @@ describe('photo-prestige app', function() {
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({
-      proxiedTo: 'http://read-service:3006',
+      proxiedTo: 'http://read-service:3007',
       path: '/api/v1/read/contests/active?city=Eindhoven',
       method: 'GET',
       body: {}
