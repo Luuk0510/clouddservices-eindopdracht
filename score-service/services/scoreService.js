@@ -174,11 +174,13 @@ exports.createSubmission = async function createSubmission(input) {
     throw new HttpError(403, 'You must register for this target before creating a submission');
   }
 
-  if (imageUrl === normalizeImageUrl(target.imageUrl)) {
+  var targetImageUrl = normalizeImageUrl(target.imageUrl);
+
+  if (imageUrl === targetImageUrl) {
     throw new HttpError(400, 'Submission must not use the exact same image URL as the target');
   }
 
-  var similarityScore = await calculateScore(target.imageUrl, imageUrl);
+  var similarityScore = await calculateScore(targetImageUrl, imageUrl);
 
   var submission = await Submission.create({
     targetId: target.targetId,
