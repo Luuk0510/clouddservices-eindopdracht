@@ -46,6 +46,12 @@ Stoppen:
 docker compose down
 ```
 
+Scalen voorbeeld:
+```bash
+docker compose scale target-service=1
+```
+
+
 ---
 
 ## Teststatus
