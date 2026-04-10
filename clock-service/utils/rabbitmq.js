@@ -1,9 +1,9 @@
 var amqp = require('amqplib');
 var env = require('../config/env');
 
-var EXCHANGE = 'photo-prestige';
+var EXCHANGE = env.rabbitmqExchange;
 var EXCHANGE_TYPE = 'topic';
-var RECONNECT_DELAY_MS = 5000;
+var RECONNECT_DELAY_MS = env.rabbitmqReconnectDelayMs;
 
 var _connection = null;
 var _channel = null;
@@ -126,5 +126,8 @@ module.exports = {
   connect: connect,
   publish: publish,
   subscribe: subscribe,
-  close: close
+  close: close,
+  isReady: function isReady() {
+    return Boolean(_channel);
+  }
 };

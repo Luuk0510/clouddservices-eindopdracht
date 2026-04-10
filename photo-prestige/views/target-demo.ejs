@@ -8,17 +8,18 @@
     <main class="page">
       <nav class="top-nav">
         <a class="nav-link" href="/">Home</a>
-        <a class="nav-link" href="/auth-demo">Auth Demo</a>
-        <a class="nav-link" href="/register-demo">Register Demo</a>
-        <a class="nav-link" href="/score-demo">Score Demo</a>
-        <a class="nav-link active-link" href="/target-demo">Target Demo</a>
-        <a class="nav-link" href="/read-demo">Read Demo</a>
+        <a class="nav-link" href="/auth-demo">Auth</a>
+        <a class="nav-link" href="/register-demo">Register</a>
+        <a class="nav-link" href="/score-demo">Score</a>
+        <a class="nav-link active-link" href="/target-demo">Target</a>
+        <a class="nav-link" href="/read-demo">Read</a>
+        <a class="nav-link" href="/clock-demo">Clock</a>
+        <a class="nav-link" href="/mail-demo">Mail</a>
         <a class="nav-link" href="/api-docs">API Docs</a>
       </nav>
 
       <section class="hero">
         <h1><%= title %></h1>
-        <p class="intro">Gebruik deze pagina om de Target service via de API Gateway te testen. Login eerst op de Auth Demo pagina zodat er een JWT in localStorage staat.</p>
       </section>
 
       <section class="card">
@@ -30,6 +31,12 @@
       </section>
 
       <section class="grid">
+        <section class="card">
+          <h2>Health</h2>
+          <button id="target-health-button" type="button">Check target health</button>
+          <pre id="target-health-result">Nog niet getest.</pre>
+        </section>
+
         <section class="card">
           <h2>Targets lijst</h2>
           <form id="targets-list-form">
@@ -150,7 +157,7 @@
       function updateTokenView() {
         const token = getToken();
         if (!token) {
-          document.getElementById('token-result').textContent = 'Nog geen token gevonden. Login eerst op de Auth Demo pagina.';
+          document.getElementById('token-result').textContent = 'Nog geen token gevonden. Login eerst op de Auth pagina.';
           applyRoleVisibility();
           return;
         }
@@ -189,6 +196,15 @@
       document.getElementById('clear-token-button').addEventListener('click', function() {
         localStorage.removeItem('demo_jwt_token');
         updateTokenView();
+      });
+
+      document.getElementById('target-health-button').addEventListener('click', async function() {
+        try {
+          const result = await requestJson('/api/v1/targets/health', { method: 'GET' });
+          showJson('target-health-result', result);
+        } catch (error) {
+          showJson('target-health-result', { error: error.message });
+        }
       });
 
       document.getElementById('targets-list-form').addEventListener('submit', async function(event) {

@@ -34,6 +34,10 @@ var clockSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   },
+  reminderSentAt: {
+    type: Date,
+    default: null
+  },
   reachedAt: {
     type: Date,
     default: null

@@ -1,8 +1,8 @@
 var amqp = require('amqplib');
 
-var EXCHANGE = 'photo-prestige';
+var EXCHANGE = process.env.RABBITMQ_EXCHANGE || 'photo-prestige';
 var EXCHANGE_TYPE = 'topic';
-var RECONNECT_DELAY_MS = 5000;
+var RECONNECT_DELAY_MS = Number(process.env.RABBITMQ_RECONNECT_DELAY_MS || 5000);
 
 var rabbitmqUrl = process.env.RABBITMQ_URL || 'amqp://guest:guest@rabbitmq:5672';
 

@@ -7,23 +7,31 @@ router.get('/', function(req, res, next) {
 });
 
 router.get('/auth-demo', function(req, res, next) {
-  res.render('auth-demo', { title: 'Auth Demo' });
+  res.render('auth-demo', { title: 'Auth' });
 });
 
 router.get('/register-demo', function(req, res, next) {
-  res.render('register-demo', { title: 'Register Demo' });
+  res.render('register-demo', { title: 'Register' });
 });
 
 router.get('/score-demo', function(req, res, next) {
-  res.render('score-demo', { title: 'Score Demo' });
+  res.render('score-demo', { title: 'Score' });
 });
 
 router.get('/target-demo', function(req, res, next) {
-  res.render('target-demo', { title: 'Target Demo' });
+  res.render('target-demo', { title: 'Target' });
 });
 
 router.get('/read-demo', function(req, res, next) {
-  res.render('read-demo', { title: 'Read Demo' });
+  res.render('read-demo', { title: 'Read' });
+});
+
+router.get('/clock-demo', function(req, res, next) {
+  res.render('clock-demo', { title: 'Clock' });
+});
+
+router.get('/mail-demo', function(req, res, next) {
+  res.render('mail-demo', { title: 'Mail' });
 });
 
 router.get('/api-docs', function(req, res, next) {

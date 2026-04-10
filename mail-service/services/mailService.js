@@ -6,6 +6,7 @@ var buildRegistrationEmail = require('../templates/registrationEmail');
 var buildReminderEmail = require('../templates/reminderEmail');
 var buildDeadlineClosedEmail = require('../templates/deadlineClosedEmail');
 var buildScoreEmail = require('../templates/scoreEmail');
+var buildOwnerScoresEmail = require('../templates/ownerScoresEmail');
 
 async function deliverMail(options) {
   var to = String(options.to || '').trim();
@@ -90,6 +91,17 @@ exports.sendDeadlineReminderEmail = async function sendDeadlineReminderEmail(pay
 
 exports.sendDeadlineClosedEmail = async function sendDeadlineClosedEmail(payload) {
   var message = buildDeadlineClosedEmail(payload);
+
+  return deliverMail({
+    to: payload.to,
+    subject: message.subject,
+    text: message.text,
+    html: message.html
+  });
+};
+
+exports.sendOwnerScoresEmail = async function sendOwnerScoresEmail(payload) {
+  var message = buildOwnerScoresEmail(payload);
 
   return deliverMail({
     to: payload.to,

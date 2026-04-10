@@ -117,7 +117,7 @@ function publishScoreCalculated(submission, sourceSubmissionId) {
 
 function publishWinnerCalculated(message, winnerSubmission) {
   var calculatedAt = new Date();
-  var payload = {
+  return {
     targetId: message.targetId,
     winnerSubmissionId: winnerSubmission ? String(winnerSubmission._id) : null,
     winnerUserId: winnerSubmission ? winnerSubmission.userId : null,
@@ -127,16 +127,6 @@ function publishWinnerCalculated(message, winnerSubmission) {
     deadlineAt: message.deadlineAt,
     calculatedAt: calculatedAt.toISOString()
   };
-
-  logger.info('competition.publishing', {
-    routingKey: 'competition.winner-calculated.v1',
-    targetId: payload.targetId,
-    winnerSubmissionId: payload.winnerSubmissionId
-  });
-
-  rabbitmq.publish('competition.winner-calculated.v1', payload);
-
-  return payload;
 }
 
 function serializeWinner(winner, winnerUserEmail) {
@@ -184,11 +174,13 @@ exports.createSubmission = async function createSubmission(input) {
     throw new HttpError(403, 'You must register for this target before creating a submission');
   }
 
-  if (imageUrl === normalizeImageUrl(target.imageUrl)) {
+  var targetImageUrl = normalizeImageUrl(target.imageUrl);
+
+  if (imageUrl === targetImageUrl) {
     throw new HttpError(400, 'Submission must not use the exact same image URL as the target');
   }
 
-  var similarityScore = await calculateScore(target.imageUrl, imageUrl);
+  var similarityScore = await calculateScore(targetImageUrl, imageUrl);
 
   var submission = await Submission.create({
     targetId: target.targetId,
@@ -268,7 +260,19 @@ exports.deleteSubmission = async function deleteSubmission(input) {
   }
 
   if (submission.userId !== input.userId) {
-    throw new HttpError(403, 'You can only delete your own upload');
+    if (input.userRole !== 'target-owner') {
+      throw new HttpError(403, 'You can only delete your own upload');
+    }
+
+    var target = await targetServiceClient.getTargetById(submission.targetId, input.authToken);
+
+    if (!target) {
+      throw new HttpError(404, 'Target not found');
+    }
+
+    if (target.ownerId !== input.userId) {
+      throw new HttpError(403, 'Only the target owner can delete submissions on this target');
+    }
   }
 
   await Submission.deleteOne({ _id: submission._id });
@@ -328,16 +332,40 @@ exports.handleDeadlineReachedEvent = async function handleDeadlineReachedEvent(m
     throw new Error('clock.deadline-reached.v1 missing required fields');
   }
 
-  var winnerSubmission = await Submission.findOne({
+  var submissions = await Submission.find({
     targetId: message.targetId
   }).sort({ similarityScore: -1, createdAt: 1 });
-
+  var winnerSubmission = submissions.length ? submissions[0] : null;
+  var target = await targetServiceClient.getTargetById(message.targetId, '');
   var payload = publishWinnerCalculated(message, winnerSubmission);
 
-  await Winner.findOneAndUpdate({
+  if (target) {
+    payload.ownerId = target.ownerId || null;
+    payload.ownerEmail = target.ownerEmail || null;
+    payload.targetTitle = target.title || '';
+    payload.targetDescription = target.description || '';
+    payload.targetImageUrl = target.imageUrl || '';
+    payload.targetCity = target.city || '';
+    payload.targetLocationDescription = target.locationDescription || '';
+    payload.targetRadiusMeters = target.radiusMeters || null;
+  }
+
+  payload.scores = submissions.map(function(submission, index) {
+    return {
+      rank: index + 1,
+      submissionId: String(submission._id),
+      userId: submission.userId,
+      userEmail: submission.userEmail,
+      similarityScore: submission.similarityScore,
+      submittedAt: submission.createdAt.toISOString()
+    };
+  });
+
+  var writeResult = await Winner.updateOne({
     targetId: message.targetId
   }, {
-    $set: {
+    $setOnInsert: {
+      targetId: message.targetId,
       winnerSubmissionId: payload.winnerSubmissionId,
       winnerUserId: payload.winnerUserId,
       winnerUserEmail: payload.winnerUserEmail,
@@ -347,14 +375,28 @@ exports.handleDeadlineReachedEvent = async function handleDeadlineReachedEvent(m
       calculatedAt: new Date(payload.calculatedAt)
     }
   }, {
-    upsert: true,
-    new: true,
-    setDefaultsOnInsert: true
+    upsert: true
   });
+
+  if (writeResult.upsertedCount === 1) {
+    logger.info('competition.publishing', {
+      routingKey: 'competition.winner-calculated.v1',
+      targetId: payload.targetId,
+      winnerSubmissionId: payload.winnerSubmissionId
+    });
+
+    rabbitmq.publish('competition.winner-calculated.v1', payload);
+  } else {
+    logger.info('competition.publish_skipped', {
+      routingKey: 'competition.winner-calculated.v1',
+      targetId: payload.targetId
+    });
+  }
 
   return {
     targetId: message.targetId,
-    winnerSubmissionId: winnerSubmission ? String(winnerSubmission._id) : null
+    winnerSubmissionId: winnerSubmission ? String(winnerSubmission._id) : null,
+    published: writeResult.upsertedCount === 1
   };
 };
 

@@ -11,7 +11,13 @@ function normalizeTarget(targetId, payload) {
   return {
     targetId: source.targetId || source._id || targetId,
     ownerId: source.ownerId,
+    ownerEmail: source.ownerEmail || '',
+    title: source.title || '',
+    description: source.description || '',
     imageUrl: source.imageUrl,
+    city: source.city || '',
+    locationDescription: source.locationDescription || '',
+    radiusMeters: source.radiusMeters || null,
     deadlineAt: source.deadlineAt || source.deadline,
     status: source.status
   };

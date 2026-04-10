@@ -74,6 +74,16 @@ exports.handleWinnerCalculatedEvent = async function handleWinnerCalculatedEvent
     });
   }
 
+  if (message.ownerEmail) {
+    await mailService.sendOwnerScoresEmail({
+      to: message.ownerEmail,
+      targetId: message.targetId,
+      targetTitle: message.targetTitle,
+      targetDeadline: message.deadlineAt,
+      scores: message.scores
+    });
+  }
+
   logger.info('mail.event_processed', {
     routingKey: 'competition.winner-calculated.v1',
     targetId: message.targetId,

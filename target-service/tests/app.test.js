@@ -8,6 +8,7 @@ describe('target-service app', function() {
     expect(response.status).toBe(200);
     expect(response.body).toEqual({
       status: 'ok',
+      version: 'v1',
       service: 'target-service'
     });
   });

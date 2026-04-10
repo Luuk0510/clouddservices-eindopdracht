@@ -2,7 +2,6 @@ services:
   photo-prestige:
     build:
       context: ./photo-prestige
-    container_name: photo-prestige-api-gateway
     depends_on:
       - auth-service
       - target-service
@@ -11,43 +10,54 @@ services:
       - read-service
       - rabbitmq
       - mail-service
-    ports:
-      - "${GATEWAY_PORT:-3000}:3000"
+    expose:
+      - "${GATEWAY_PORT:-3000}"
     environment:
       - NODE_ENV=${NODE_ENV:-production}
-      - PORT=3000
-      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL:-http://auth-service:3001}
-      - TARGET_SERVICE_URL=${TARGET_SERVICE_URL:-http://target-service:3002}
-      - REGISTER_SERVICE_URL=${REGISTER_SERVICE_URL:-http://register-service:3003}
-      - SCORE_SERVICE_URL=${SCORE_SERVICE_URL:-http://score-service:3005}
-      - READ_SERVICE_URL=${READ_SERVICE_URL:-http://read-service:3007}
+      - PORT=${GATEWAY_PORT:-3000}
+      - AUTH_SERVICE_URL=http://auth-service:${AUTH_SERVICE_PORT:-3001}
+      - TARGET_SERVICE_URL=http://target-service:${TARGET_SERVICE_PORT:-3002}
+      - REGISTER_SERVICE_URL=http://register-service:${REGISTER_SERVICE_PORT:-3003}
+      - SCORE_SERVICE_URL=http://score-service:${SCORE_SERVICE_PORT:-3005}
+      - CLOCK_SERVICE_URL=http://clock-service:${CLOCK_SERVICE_PORT:-3004}
+      - READ_SERVICE_URL=http://read-service:${READ_SERVICE_PORT:-3007}
       - RABBITMQ_URL=${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672}
-      - MAIL_SERVICE_URL=${MAIL_SERVICE_URL:-http://mail-service:3006}
+      - RABBITMQ_EXCHANGE=${RABBITMQ_EXCHANGE:-photo-prestige}
+      - RABBITMQ_RECONNECT_DELAY_MS=${RABBITMQ_RECONNECT_DELAY_MS:-5000}
+      - GATEWAY_PROXY_TIMEOUT_MS=${GATEWAY_PROXY_TIMEOUT_MS:-5000}
+      - GATEWAY_RETRY_ATTEMPTS=${GATEWAY_RETRY_ATTEMPTS:-3}
+      - GATEWAY_RETRY_DELAY_MS=${GATEWAY_RETRY_DELAY_MS:-250}
+      - GATEWAY_CIRCUIT_BREAKER_THRESHOLD=${GATEWAY_CIRCUIT_BREAKER_THRESHOLD:-3}
+      - GATEWAY_CIRCUIT_BREAKER_RESET_TIMEOUT_MS=${GATEWAY_CIRCUIT_BREAKER_RESET_TIMEOUT_MS:-10000}
+      - MAIL_SERVICE_URL=http://mail-service:${MAIL_SERVICE_PORT:-3006}
+
+  gateway-lb:
+    image: nginx:1.27-alpine
+    depends_on:
+      - photo-prestige
+    ports:
+      - "${GATEWAY_PORT:-3000}:3000"
+    volumes:
+      - ./nginx/gateway-lb.conf:/etc/nginx/conf.d/default.conf:ro
 
   read-service:
     build:
       context: ./read-service
-    container_name: photo-prestige-read-service
     depends_on:
       - target-service
-    ports:
-      - "${READ_SERVICE_PORT:-3007}:3007"
     environment:
       - NODE_ENV=${NODE_ENV:-production}
-      - PORT=3007
-      - TARGET_SERVICE_URL=${TARGET_SERVICE_URL:-http://target-service:3002}
+      - PORT=${READ_SERVICE_PORT:-3007}
+      - TARGET_SERVICE_URL=http://target-service:${TARGET_SERVICE_PORT:-3002}
 
   auth-service:
     build:
       context: ./auth-service
-    container_name: photo-prestige-auth-service
     depends_on:
       - mongodb
-    ports:
-      - "${AUTH_SERVICE_PORT:-3001}:3001"
     environment:
       - NODE_ENV=${NODE_ENV:-production}
-      - PORT=3001
+      - PORT=${AUTH_SERVICE_PORT:-3001}
       - MONGODB_URI=${AUTH_MONGODB_URI:-mongodb://mongodb:27017/photo-prestige}
       - JWT_SECRET=${JWT_SECRET:-change-this-in-real-deployments}
       - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-1d}
@@ -55,56 +65,52 @@ services:
   target-service:
     build:
       context: ./target-service
-    container_name: photo-prestige-target-service
     depends_on:
       - mongodb
       - rabbitmq
-    ports:
-      - "${TARGET_SERVICE_PORT:-3002}:3002"
     environment:
       - NODE_ENV=${NODE_ENV:-production}
-      - PORT=3002
+      - PORT=${TARGET_SERVICE_PORT:-3002}
       - MONGODB_URI=${TARGET_MONGODB_URI:-mongodb://mongodb:27017/photo-prestige}
       - JWT_SECRET=${JWT_SECRET:-change-this-in-real-deployments}
       - RABBITMQ_URL=${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672}
+      - RABBITMQ_EXCHANGE=${RABBITMQ_EXCHANGE:-photo-prestige}
+      - RABBITMQ_RECONNECT_DELAY_MS=${RABBITMQ_RECONNECT_DELAY_MS:-5000}
 
   register-service:
     build:
       context: ./register-service
-    container_name: photo-prestige-register-service
     depends_on:
       - register-mongodb
       - rabbitmq
-    ports:
-      - "${REGISTER_SERVICE_PORT:-3003}:3003"
     environment:
       - NODE_ENV=${NODE_ENV:-production}
-      - PORT=3003
+      - PORT=${REGISTER_SERVICE_PORT:-3003}
       - MONGODB_URI=${REGISTER_MONGODB_URI:-mongodb://register-mongodb:27017/register-service}
       - JWT_SECRET=${JWT_SECRET:-change-this-in-real-deployments}
-      
-      - TARGET_SERVICE_URL=${TARGET_SERVICE_URL:-http://target-service:3002}
+      - TARGET_SERVICE_URL=http://target-service:${TARGET_SERVICE_PORT:-3002}
       - RABBITMQ_URL=${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672}
+      - RABBITMQ_EXCHANGE=${RABBITMQ_EXCHANGE:-photo-prestige}
+      - RABBITMQ_RECONNECT_DELAY_MS=${RABBITMQ_RECONNECT_DELAY_MS:-5000}
 
   score-service:
     build:
       context: ./score-service
-    container_name: photo-prestige-score-service
     depends_on:
       - score-mongodb
       - target-service
       - rabbitmq
-    ports:
-      - "${SCORE_SERVICE_PORT:-3005}:3005"
     environment:
       - NODE_ENV=${NODE_ENV:-production}
-      - PORT=3005
+      - PORT=${SCORE_SERVICE_PORT:-3005}
       - MONGODB_URI=${SCORE_MONGODB_URI:-mongodb://score-mongodb:27017/score-service}
       - JWT_SECRET=${JWT_SECRET:-change-this-in-real-deployments}
-      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL:-http://auth-service:3001}
-      - REGISTER_SERVICE_URL=${REGISTER_SERVICE_URL:-http://register-service:3003}
-      - TARGET_SERVICE_URL=${TARGET_SERVICE_URL:-http://target-service:3002}
+      - AUTH_SERVICE_URL=http://auth-service:${AUTH_SERVICE_PORT:-3001}
+      - REGISTER_SERVICE_URL=http://register-service:${REGISTER_SERVICE_PORT:-3003}
+      - TARGET_SERVICE_URL=http://target-service:${TARGET_SERVICE_PORT:-3002}
       - RABBITMQ_URL=${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672}
+      - RABBITMQ_EXCHANGE=${RABBITMQ_EXCHANGE:-photo-prestige}
+      - RABBITMQ_RECONNECT_DELAY_MS=${RABBITMQ_RECONNECT_DELAY_MS:-5000}
       - IMAGGA_API_KEY=${IMAGGA_API_KEY:-}
       - IMAGGA_API_SECRET=${IMAGGA_API_SECRET:-}
       - IMAGGA_API_BASE_URL=${IMAGGA_API_BASE_URL:-https://api.imagga.com/v2}
@@ -112,31 +118,27 @@ services:
   clock-service:
     build:
       context: ./clock-service
-    container_name: photo-prestige-clock-service
     depends_on:
       - clock-mongodb
       - rabbitmq
-    ports:
-      - "${CLOCK_SERVICE_PORT:-3004}:3004"
     environment:
       - NODE_ENV=${NODE_ENV:-production}
-      - PORT=3004
+      - PORT=${CLOCK_SERVICE_PORT:-3004}
       - MONGODB_URI=${CLOCK_MONGODB_URI:-mongodb://clock-mongodb:27017/clock-service}
       - RABBITMQ_URL=${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672}
+      - RABBITMQ_EXCHANGE=${RABBITMQ_EXCHANGE:-photo-prestige}
+      - RABBITMQ_RECONNECT_DELAY_MS=${RABBITMQ_RECONNECT_DELAY_MS:-5000}
       - DEADLINE_REMINDER_MINUTES=${DEADLINE_REMINDER_MINUTES:-60}
 
   mail-service:
     build:
       context: ./mail-service
-    container_name: photo-prestige-mail-service
     depends_on:
       - mail-mongodb
       - rabbitmq
-    ports:
-      - "${MAIL_SERVICE_PORT:-3006}:3006"
     environment:
       - NODE_ENV=${NODE_ENV:-production}
-      - PORT=3006
+      - PORT=${MAIL_SERVICE_PORT:-3006}
       - MAIL_MONGODB_URI=${MAIL_MONGODB_URI:-mongodb://mail-mongodb:27017/mail-service}
       - JWT_SECRET=${JWT_SECRET:-change-this-in-real-deployments}
       - RABBITMQ_URL=${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672}
@@ -145,9 +147,6 @@ services:
 
   mongodb:
     image: mongo:7
-    container_name: photo-prestige-mongodb
-    ports:
-      - "27017:27017"
     environment:
       - MONGO_INITDB_DATABASE=photo-prestige
     volumes:
@@ -155,9 +154,6 @@ services:
 
   register-mongodb:
     image: mongo:7
-    container_name: photo-prestige-register-mongodb
-    ports:
-      - "27018:27017"
     environment:
       - MONGO_INITDB_DATABASE=register-service
     volumes:
@@ -165,9 +161,6 @@ services:
 
   score-mongodb:
     image: mongo:7
-    container_name: photo-prestige-score-mongodb
-    ports:
-      - "27019:27017"
     environment:
       - MONGO_INITDB_DATABASE=score-service
     volumes:
@@ -175,9 +168,6 @@ services:
 
   clock-mongodb:
     image: mongo:7
-    container_name: photo-prestige-clock-mongodb
-    ports:
-      - "27020:27017"
     environment:
       - MONGO_INITDB_DATABASE=clock-service
     volumes:
@@ -185,9 +175,6 @@ services:
 
   mail-mongodb:
     image: mongo:7
-    container_name: photo-prestige-mail-mongodb
-    ports:
-      - "27021:27017"
     environment:
       - MONGO_INITDB_DATABASE=mail-service
     volumes:
@@ -195,7 +182,6 @@ services:
 
   rabbitmq:
     image: rabbitmq:3-management
-    container_name: photo-prestige-rabbitmq
     ports:
       - "5672:5672"
       - "15672:15672"
