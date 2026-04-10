@@ -260,7 +260,19 @@ exports.deleteSubmission = async function deleteSubmission(input) {
   }
 
   if (submission.userId !== input.userId) {
-    throw new HttpError(403, 'You can only delete your own upload');
+    if (input.userRole !== 'target-owner') {
+      throw new HttpError(403, 'You can only delete your own upload');
+    }
+
+    var target = await targetServiceClient.getTargetById(submission.targetId, input.authToken);
+
+    if (!target) {
+      throw new HttpError(404, 'Target not found');
+    }
+
+    if (target.ownerId !== input.userId) {
+      throw new HttpError(403, 'Only the target owner can delete submissions on this target');
+    }
   }
 
   await Submission.deleteOne({ _id: submission._id });

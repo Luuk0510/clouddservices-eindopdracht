@@ -14,6 +14,6 @@ router.post('/api/v1/targets/:targetId/submissions', authenticate, authorizeRole
 router.get('/api/v1/targets/:targetId/score', authenticate, authorizeRole('participant'), validateTargetId, asyncHandler(scoreController.getMyScore));
 router.get('/api/v1/targets/:targetId/scores', authenticate, authorizeRole('target-owner'), validateTargetId, asyncHandler(scoreController.getTargetScores));
 router.get('/api/v1/targets/:targetId/winner', authenticate, authorizeRole('participant', 'target-owner'), validateTargetId, asyncHandler(scoreController.getTargetWinner));
-router.delete('/api/v1/submissions/:submissionId', authenticate, authorizeRole('participant'), asyncHandler(scoreController.deleteSubmission));
+router.delete('/api/v1/submissions/:submissionId', authenticate, authorizeRole('participant', 'target-owner'), asyncHandler(scoreController.deleteSubmission));
 
 module.exports = router;

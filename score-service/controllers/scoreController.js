@@ -48,7 +48,9 @@ exports.getTargetWinner = async function(req, res) {
 exports.deleteSubmission = async function(req, res) {
   var result = await scoreService.deleteSubmission({
     submissionId: req.params.submissionId,
-    userId: req.user.userId
+    userId: req.user.userId,
+    userRole: req.user.role,
+    authToken: req.token
   });
 
   res.status(200).json(result);
