@@ -332,11 +332,35 @@ exports.handleDeadlineReachedEvent = async function handleDeadlineReachedEvent(m
     throw new Error('clock.deadline-reached.v1 missing required fields');
   }
 
-  var winnerSubmission = await Submission.findOne({
+  var submissions = await Submission.find({
     targetId: message.targetId
   }).sort({ similarityScore: -1, createdAt: 1 });
-
+  var winnerSubmission = submissions.length ? submissions[0] : null;
+  var target = await targetServiceClient.getTargetById(message.targetId, '');
   var payload = publishWinnerCalculated(message, winnerSubmission);
+
+  if (target) {
+    payload.ownerId = target.ownerId || null;
+    payload.ownerEmail = target.ownerEmail || null;
+    payload.targetTitle = target.title || '';
+    payload.targetDescription = target.description || '';
+    payload.targetImageUrl = target.imageUrl || '';
+    payload.targetCity = target.city || '';
+    payload.targetLocationDescription = target.locationDescription || '';
+    payload.targetRadiusMeters = target.radiusMeters || null;
+  }
+
+  payload.scores = submissions.map(function(submission, index) {
+    return {
+      rank: index + 1,
+      submissionId: String(submission._id),
+      userId: submission.userId,
+      userEmail: submission.userEmail,
+      similarityScore: submission.similarityScore,
+      submittedAt: submission.createdAt.toISOString()
+    };
+  });
+
   var writeResult = await Winner.updateOne({
     targetId: message.targetId
   }, {
