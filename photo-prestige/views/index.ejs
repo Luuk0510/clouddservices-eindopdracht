@@ -8,16 +8,18 @@
     <main class="page">
       <nav class="top-nav">
         <a class="nav-link active-link" href="/">Home</a>
-        <a class="nav-link" href="/auth-demo">Auth Demo</a>
-        <a class="nav-link" href="/register-demo">Register Demo</a>
-        <a class="nav-link" href="/score-demo">Score Demo</a>
-        <a class="nav-link" href="/target-demo">Target Demo</a>
+        <a class="nav-link" href="/auth-demo">Auth</a>
+        <a class="nav-link" href="/register-demo">Register</a>
+        <a class="nav-link" href="/score-demo">Score</a>
+        <a class="nav-link" href="/target-demo">Target</a>
+        <a class="nav-link" href="/read-demo">Read</a>
+        <a class="nav-link" href="/clock-demo">Clock</a>
+        <a class="nav-link" href="/mail-demo">Mail</a>
+        <a class="nav-link" href="/api-docs">API Docs</a>
       </nav>
 
       <section class="hero">
-        <p class="eyebrow">Minimal Demo GUI</p>
         <h1><%= title %></h1>
-        <p class="intro">Gebruik dit startscherm om naar kleine testpagina's te gaan in plaats van alles op een grote pagina te zetten.</p>
       </section>
 
       <section class="card">
@@ -30,27 +32,51 @@
 
       <section class="grid">
         <section class="card">
-          <h2>Auth Demo</h2>
+          <h2>Auth</h2>
           <p>Register, login en JWT opslaan in de browser.</p>
           <a class="button-link" href="/auth-demo">Open auth page</a>
         </section>
 
         <section class="card">
-          <h2>Register Demo</h2>
+          <h2>Register</h2>
           <p>Test register health, create registration, participants en delete.</p>
           <a class="button-link" href="/register-demo">Open register page</a>
         </section>
 
         <section class="card">
-          <h2>Score Demo</h2>
+          <h2>Score</h2>
           <p>Test submissions, mijn score, alle scores en delete submission.</p>
           <a class="button-link" href="/score-demo">Open score page</a>
         </section>
 
         <section class="card">
-          <h2>Target Demo</h2>
+          <h2>Target</h2>
           <p>Targets aanmaken, beheren en als deelnemer inzendingen uploaden.</p>
           <a class="button-link" href="/target-demo">Open target page</a>
+        </section>
+
+        <section class="card">
+          <h2>Read</h2>
+          <p>Bekijk actieve wedstrijden via de read-service endpoint.</p>
+          <a class="button-link" href="/read-demo">Open read page</a>
+        </section>
+
+        <section class="card">
+          <h2>Clock</h2>
+          <p>Controleer de clock-service en de health status via de gateway.</p>
+          <a class="button-link" href="/clock-demo">Open clock page</a>
+        </section>
+
+        <section class="card">
+          <h2>Mail</h2>
+          <p>Controleer de mail-service en de health status via de gateway.</p>
+          <a class="button-link" href="/mail-demo">Open mail page</a>
+        </section>
+
+        <section class="card">
+          <h2>Swagger Docs</h2>
+          <p>OpenAPI documentatie van alle gateway endpoints.</p>
+          <a class="button-link" href="/api-docs">Open API docs</a>
         </section>
       </section>
     </main>
@@ -74,6 +100,7 @@
           document.getElementById('health-result').textContent = JSON.stringify({ error: error.message }, null, 2);
         }
       });
+
     </script>
   </body>
 </html>

@@ -33,3 +33,25 @@ exports.listUsers = async function(req, res) {
   var result = await authService.listUsers();
   res.status(200).json(result);
 };
+
+exports.getUserById = async function(req, res) {
+  var requestedUserId = String(req.params.userId || '');
+  var isTargetOwner = req.user && req.user.role === 'target-owner';
+  var isSelf = req.auth && String(req.auth.userId || '') === requestedUserId;
+
+  if (!isTargetOwner && !isSelf) {
+    return res.status(403).json({
+      error: 'Forbidden for this role'
+    });
+  }
+
+  var user = await authService.getUserById(requestedUserId);
+
+  if (!user) {
+    return res.status(404).json({
+      error: 'User not found'
+    });
+  }
+
+  res.status(200).json({ user: user });
+};

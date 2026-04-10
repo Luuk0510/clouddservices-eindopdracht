@@ -3,12 +3,11 @@ name: Node CI
 on:
   push:
     branches:
-      - main
-      - develop
+      - '**'
   pull_request:
     branches:
-      - main
-      - develop
+      - '**'
+  workflow_dispatch:
 
 jobs:
   test-services:
@@ -19,8 +18,11 @@ jobs:
           - photo-prestige
           - auth-service
           - register-service
+          - clock-service
           - score-service
+          - mail-service
           - target-service
+          - clock-service
 
     defaults:
       run:

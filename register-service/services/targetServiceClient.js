@@ -10,6 +10,12 @@ function normalizeTarget(targetId, payload) {
 
   return {
     targetId: source.targetId || source._id || targetId,
+    title: source.title || '',
+    description: source.description || '',
+    imageUrl: source.imageUrl || '',
+    city: source.city || '',
+    locationDescription: source.locationDescription || '',
+    radiusMeters: source.radiusMeters,
     ownerId: source.ownerId,
     deadline: source.deadline || source.deadlineAt,
     status: source.status

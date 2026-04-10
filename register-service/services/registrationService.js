@@ -2,6 +2,7 @@ var Registration = require('../models/Registration');
 var targetServiceClient = require('./targetServiceClient');
 var HttpError = require('../utils/HttpError');
 var rabbitmq = require('../utils/rabbitmq');
+var clockEventService = require('./clockEventService');
 
 function serializeRegistration(registration) {
   return {
@@ -41,6 +42,12 @@ async function ensureTargetAllowsRegistration(targetId, authToken) {
 
   return {
     targetId: target.targetId,
+    title: target.title,
+    description: target.description,
+    imageUrl: target.imageUrl,
+    city: target.city,
+    locationDescription: target.locationDescription,
+    radiusMeters: target.radiusMeters,
     ownerId: target.ownerId,
     deadline: deadline,
     status: target.status
@@ -48,6 +55,12 @@ async function ensureTargetAllowsRegistration(targetId, authToken) {
 }
 
 exports.createRegistration = async function createRegistration(input) {
+  var isClosed = await clockEventService.isTargetClosed(input.targetId);
+
+  if (isClosed) {
+    throw new HttpError(409, 'Registration for this target is closed');
+  }
+
   var target = await ensureTargetAllowsRegistration(input.targetId, input.authToken);
   var existingRegistration = await Registration.findOne({
     targetId: input.targetId,
@@ -72,6 +85,13 @@ exports.createRegistration = async function createRegistration(input) {
   rabbitmq.publish('registration.created', {
     registrationId: String(registration._id),
     targetId: registration.targetId,
+    targetTitle: target.title,
+    targetDescription: target.description,
+    targetImageUrl: target.imageUrl,
+    targetCity: target.city,
+    targetLocationDescription: target.locationDescription,
+    targetRadiusMeters: target.radiusMeters,
+    targetDeadline: target.deadline.toISOString(),
     userId: registration.userId,
     userEmail: registration.userEmail
   });

@@ -8,16 +8,18 @@
     <main class="page">
       <nav class="top-nav">
         <a class="nav-link" href="/">Home</a>
-        <a class="nav-link" href="/auth-demo">Auth Demo</a>
-        <a class="nav-link" href="/register-demo">Register Demo</a>
-        <a class="nav-link active-link" href="/score-demo">Score Demo</a>
-        <a class="nav-link" href="/target-demo">Target Demo</a>
+        <a class="nav-link" href="/auth-demo">Auth</a>
+        <a class="nav-link" href="/register-demo">Register</a>
+        <a class="nav-link active-link" href="/score-demo">Score</a>
+        <a class="nav-link" href="/target-demo">Target</a>
+        <a class="nav-link" href="/read-demo">Read</a>
+        <a class="nav-link" href="/clock-demo">Clock</a>
+        <a class="nav-link" href="/mail-demo">Mail</a>
+        <a class="nav-link" href="/api-docs">API Docs</a>
       </nav>
 
       <section class="hero">
-        <p class="eyebrow">Minimal Demo GUI</p>
         <h1><%= title %></h1>
-        <p class="intro">Gebruik deze pagina om de Score service via de API Gateway te testen. Login eerst op de Auth Demo pagina zodat er een JWT in localStorage staat.</p>
       </section>
 
       <section class="card">
@@ -57,14 +59,21 @@
           <pre id="my-score-result">Nog geen request verstuurd.</pre>
         </section>
 
-        <section class="card">
+        <section class="card" data-role-required="target-owner">
           <h2>All Scores</h2>
           <button id="all-scores-button" type="button">Load all scores</button>
           <pre id="all-scores-result">Nog geen request verstuurd.</pre>
         </section>
 
         <section class="card">
+          <h2>Winner</h2>
+          <button id="winner-button" type="button">Load winner</button>
+          <pre id="winner-result">Nog geen request verstuurd.</pre>
+        </section>
+
+        <section class="card" data-role-required="participant,target-owner">
           <h2>Delete Submission</h2>
+          <p class="helper-text">Participants can delete their own submission. Target owners can delete submissions on their own target.</p>
           <button id="delete-submission-button" type="button">Delete submission</button>
           <pre id="delete-submission-result">Nog geen request verstuurd.</pre>
         </section>
@@ -87,6 +96,42 @@
         return manualToken || localStorage.getItem('demo_jwt_token') || '';
       }
 
+      function parseJwtPayload(token) {
+        try {
+          var parts = String(token || '').split('.');
+
+          if (parts.length < 2) {
+            return null;
+          }
+
+          var normalized = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+          var padded = normalized + '='.repeat((4 - normalized.length % 4) % 4);
+          return JSON.parse(atob(padded));
+        } catch (error) {
+          return null;
+        }
+      }
+
+      function getCurrentRole() {
+        var payload = parseJwtPayload(getToken());
+        return payload && payload.role ? payload.role : null;
+      }
+
+      function applyRoleVisibility() {
+        var role = getCurrentRole();
+        var restricted = document.querySelectorAll('[data-role-required]');
+
+        restricted.forEach(function(element) {
+          var required = String(element.getAttribute('data-role-required') || '')
+            .split(',')
+            .map(function(value) { return value.trim(); })
+            .filter(Boolean);
+
+          var allowed = role && required.indexOf(role) !== -1;
+          element.style.display = allowed ? '' : 'none';
+        });
+      }
+
       function getTargetId() {
         return document.getElementById('score-target-id').value.trim();
       }
@@ -103,10 +148,12 @@
         const token = getToken();
         if (!token) {
           document.getElementById('current-score-token-result').textContent = 'Nog geen token gevonden.';
+          applyRoleVisibility();
           return;
         }
 
         showJson('current-score-token-result', { token });
+        applyRoleVisibility();
       }
 
       async function requestJson(url, options) {
@@ -214,6 +261,25 @@
         }
       });
 
+      document.getElementById('winner-button').addEventListener('click', async function() {
+        const targetId = getTargetId();
+
+        if (!targetId) {
+          showJson('winner-result', { message: 'Vul eerst een Target ID in.' });
+          return;
+        }
+
+        try {
+          const result = await requestJson('/api/v1/targets/' + encodeURIComponent(targetId) + '/winner', {
+            method: 'GET',
+            headers: buildAuthHeaders()
+          });
+          showJson('winner-result', result);
+        } catch (error) {
+          showJson('winner-result', { error: error.message });
+        }
+      });
+
       document.getElementById('delete-submission-button').addEventListener('click', async function() {
         const submissionId = getSubmissionId();
 
@@ -234,8 +300,10 @@
       });
 
       document.getElementById('refresh-score-token-button').addEventListener('click', updateTokenView);
+      document.getElementById('score-token').addEventListener('input', applyRoleVisibility);
 
       updateTokenView();
+      applyRoleVisibility();
     </script>
   </body>
 </html>

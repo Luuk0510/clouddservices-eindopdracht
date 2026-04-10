@@ -4,6 +4,7 @@ var Target = require('../models/Target');
 var Submission = require('../models/Submission');
 var authenticate = require('../middleware/authenticate');
 var authorizeRole = require('../middleware/authorizeRole');
+var rabbitmq = require('../utils/rabbitmq');
 
 var router = express.Router();
 
@@ -206,6 +207,15 @@ router.post('/', authenticate, authorizeRole('target-owner'), async function(req
       ownerEmail: req.auth.email || ''
     });
 
+    rabbitmq.publish('target.created.v1', {
+      targetId: String(target._id),
+      ownerId: target.ownerId,
+      ownerEmail: target.ownerEmail,
+      imageUrl: target.imageUrl,
+      deadlineAt: target.deadlineAt.toISOString(),
+      createdAt: target.createdAt.toISOString()
+    });
+
     res.status(201).json({
       message: 'Target created',
       target: target
@@ -358,6 +368,16 @@ router.post('/:targetId/submissions', authenticate, authorizeRole('participant',
       imageUrl: imageUrl,
       similarityScore: similarityScore,
       totalScore: totalScore
+    });
+
+    rabbitmq.publish('submission.uploaded.v1', {
+      submissionId: String(submission._id),
+      targetId: String(target._id),
+      userId: submission.userId,
+      userEmail: submission.userEmail,
+      imageUrl: submission.imageUrl,
+      targetImageUrl: target.imageUrl,
+      submittedAt: submission.createdAt.toISOString()
     });
 
     res.status(201).json({
