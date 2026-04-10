@@ -12,19 +12,20 @@ services:
       - rabbitmq
       - mail-service
     ports:
-      - "${GATEWAY_PORT:-3000}:3000"
+      - "${GATEWAY_PORT:-3000}:${GATEWAY_PORT:-3000}"
     environment:
       - NODE_ENV=${NODE_ENV:-production}
-      - PORT=3000
-      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL:-http://auth-service:3001}
-      - TARGET_SERVICE_URL=${TARGET_SERVICE_URL:-http://target-service:3002}
-      - REGISTER_SERVICE_URL=${REGISTER_SERVICE_URL:-http://register-service:3003}
-      - SCORE_SERVICE_URL=${SCORE_SERVICE_URL:-http://score-service:3005}
-      - READ_SERVICE_URL=${READ_SERVICE_URL:-http://read-service:3007}
+      - PORT=${GATEWAY_PORT:-3000}
+      - AUTH_SERVICE_URL=http://auth-service:${AUTH_SERVICE_PORT:-3001}
+      - TARGET_SERVICE_URL=http://target-service:${TARGET_SERVICE_PORT:-3002}
+      - REGISTER_SERVICE_URL=http://register-service:${REGISTER_SERVICE_PORT:-3003}
+      - SCORE_SERVICE_URL=http://score-service:${SCORE_SERVICE_PORT:-3005}
+      - CLOCK_SERVICE_URL=http://clock-service:${CLOCK_SERVICE_PORT:-3004}
+      - READ_SERVICE_URL=http://read-service:${READ_SERVICE_PORT:-3007}
       - RABBITMQ_URL=${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672}
       - RABBITMQ_EXCHANGE=${RABBITMQ_EXCHANGE:-photo-prestige}
       - RABBITMQ_RECONNECT_DELAY_MS=${RABBITMQ_RECONNECT_DELAY_MS:-5000}
-      - MAIL_SERVICE_URL=${MAIL_SERVICE_URL:-http://mail-service:3006}
+      - MAIL_SERVICE_URL=http://mail-service:${MAIL_SERVICE_PORT:-3006}
 
   read-service:
     build:
@@ -34,8 +35,8 @@ services:
       - target-service
     environment:
       - NODE_ENV=${NODE_ENV:-production}
-      - PORT=3007
-      - TARGET_SERVICE_URL=${TARGET_SERVICE_URL:-http://target-service:3002}
+      - PORT=${READ_SERVICE_PORT:-3007}
+      - TARGET_SERVICE_URL=http://target-service:${TARGET_SERVICE_PORT:-3002}
 
   auth-service:
     build:
@@ -45,7 +46,7 @@ services:
       - mongodb
     environment:
       - NODE_ENV=${NODE_ENV:-production}
-      - PORT=3001
+      - PORT=${AUTH_SERVICE_PORT:-3001}
       - MONGODB_URI=${AUTH_MONGODB_URI:-mongodb://mongodb:27017/photo-prestige}
       - JWT_SECRET=${JWT_SECRET:-change-this-in-real-deployments}
       - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-1d}
@@ -59,7 +60,7 @@ services:
       - rabbitmq
     environment:
       - NODE_ENV=${NODE_ENV:-production}
-      - PORT=3002
+      - PORT=${TARGET_SERVICE_PORT:-3002}
       - MONGODB_URI=${TARGET_MONGODB_URI:-mongodb://mongodb:27017/photo-prestige}
       - JWT_SECRET=${JWT_SECRET:-change-this-in-real-deployments}
       - RABBITMQ_URL=${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672}
@@ -75,11 +76,10 @@ services:
       - rabbitmq
     environment:
       - NODE_ENV=${NODE_ENV:-production}
-      - PORT=3003
+      - PORT=${REGISTER_SERVICE_PORT:-3003}
       - MONGODB_URI=${REGISTER_MONGODB_URI:-mongodb://register-mongodb:27017/register-service}
       - JWT_SECRET=${JWT_SECRET:-change-this-in-real-deployments}
-      
-      - TARGET_SERVICE_URL=${TARGET_SERVICE_URL:-http://target-service:3002}
+      - TARGET_SERVICE_URL=http://target-service:${TARGET_SERVICE_PORT:-3002}
       - RABBITMQ_URL=${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672}
       - RABBITMQ_EXCHANGE=${RABBITMQ_EXCHANGE:-photo-prestige}
       - RABBITMQ_RECONNECT_DELAY_MS=${RABBITMQ_RECONNECT_DELAY_MS:-5000}
@@ -94,12 +94,12 @@ services:
       - rabbitmq
     environment:
       - NODE_ENV=${NODE_ENV:-production}
-      - PORT=3005
+      - PORT=${SCORE_SERVICE_PORT:-3005}
       - MONGODB_URI=${SCORE_MONGODB_URI:-mongodb://score-mongodb:27017/score-service}
       - JWT_SECRET=${JWT_SECRET:-change-this-in-real-deployments}
-      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL:-http://auth-service:3001}
-      - REGISTER_SERVICE_URL=${REGISTER_SERVICE_URL:-http://register-service:3003}
-      - TARGET_SERVICE_URL=${TARGET_SERVICE_URL:-http://target-service:3002}
+      - AUTH_SERVICE_URL=http://auth-service:${AUTH_SERVICE_PORT:-3001}
+      - REGISTER_SERVICE_URL=http://register-service:${REGISTER_SERVICE_PORT:-3003}
+      - TARGET_SERVICE_URL=http://target-service:${TARGET_SERVICE_PORT:-3002}
       - RABBITMQ_URL=${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672}
       - RABBITMQ_EXCHANGE=${RABBITMQ_EXCHANGE:-photo-prestige}
       - RABBITMQ_RECONNECT_DELAY_MS=${RABBITMQ_RECONNECT_DELAY_MS:-5000}
@@ -116,7 +116,7 @@ services:
       - rabbitmq
     environment:
       - NODE_ENV=${NODE_ENV:-production}
-      - PORT=3004
+      - PORT=${CLOCK_SERVICE_PORT:-3004}
       - MONGODB_URI=${CLOCK_MONGODB_URI:-mongodb://clock-mongodb:27017/clock-service}
       - RABBITMQ_URL=${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672}
       - RABBITMQ_EXCHANGE=${RABBITMQ_EXCHANGE:-photo-prestige}
@@ -132,7 +132,7 @@ services:
       - rabbitmq
     environment:
       - NODE_ENV=${NODE_ENV:-production}
-      - PORT=3006
+      - PORT=${MAIL_SERVICE_PORT:-3006}
       - MAIL_MONGODB_URI=${MAIL_MONGODB_URI:-mongodb://mail-mongodb:27017/mail-service}
       - JWT_SECRET=${JWT_SECRET:-change-this-in-real-deployments}
       - RABBITMQ_URL=${RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672}

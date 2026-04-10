@@ -12,6 +12,7 @@ app.use(express.urlencoded({ extended: false }));
 app.get('/health', function(req, res) {
   res.status(200).json({
     status: 'ok',
+    version: 'v1',
     service: 'read-service'
   });
 });

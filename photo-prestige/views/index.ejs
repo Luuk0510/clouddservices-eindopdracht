@@ -13,6 +13,9 @@
         <a class="nav-link" href="/score-demo">Score</a>
         <a class="nav-link" href="/target-demo">Target</a>
         <a class="nav-link" href="/read-demo">Read</a>
+        <a class="nav-link" href="/clock-demo">Clock</a>
+        <a class="nav-link" href="/mail-demo">Mail</a>
+        <a class="nav-link" href="/api-docs">API Docs</a>
       </nav>
 
       <section class="hero">
@@ -60,6 +63,18 @@
         </section>
 
         <section class="card">
+          <h2>Clock</h2>
+          <p>Controleer de clock-service en de health status via de gateway.</p>
+          <a class="button-link" href="/clock-demo">Open clock page</a>
+        </section>
+
+        <section class="card">
+          <h2>Mail</h2>
+          <p>Controleer de mail-service en de health status via de gateway.</p>
+          <a class="button-link" href="/mail-demo">Open mail page</a>
+        </section>
+
+        <section class="card">
           <h2>Swagger Docs</h2>
           <p>OpenAPI documentatie van alle gateway endpoints.</p>
           <a class="button-link" href="/api-docs">Open API docs</a>
@@ -86,6 +101,7 @@
           document.getElementById('health-result').textContent = JSON.stringify({ error: error.message }, null, 2);
         }
       });
+
     </script>
   </body>
 </html>

@@ -26,6 +26,14 @@ router.get('/read-demo', function(req, res, next) {
   res.render('read-demo', { title: 'Read' });
 });
 
+router.get('/clock-demo', function(req, res, next) {
+  res.render('clock-demo', { title: 'Clock' });
+});
+
+router.get('/mail-demo', function(req, res, next) {
+  res.render('mail-demo', { title: 'Mail' });
+});
+
 router.get('/api-docs', function(req, res, next) {
   res.redirect('/swagger.html');
 });
