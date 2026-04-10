@@ -142,8 +142,6 @@ services:
   mongodb:
     image: mongo:7
     container_name: photo-prestige-mongodb
-    ports:
-      - "27017:27017"
     environment:
       - MONGO_INITDB_DATABASE=photo-prestige
     volumes:
@@ -152,8 +150,6 @@ services:
   register-mongodb:
     image: mongo:7
     container_name: photo-prestige-register-mongodb
-    ports:
-      - "27018:27017"
     environment:
       - MONGO_INITDB_DATABASE=register-service
     volumes:
@@ -162,8 +158,6 @@ services:
   score-mongodb:
     image: mongo:7
     container_name: photo-prestige-score-mongodb
-    ports:
-      - "27019:27017"
     environment:
       - MONGO_INITDB_DATABASE=score-service
     volumes:
@@ -172,8 +166,6 @@ services:
   clock-mongodb:
     image: mongo:7
     container_name: photo-prestige-clock-mongodb
-    ports:
-      - "27020:27017"
     environment:
       - MONGO_INITDB_DATABASE=clock-service
     volumes:
@@ -182,8 +174,6 @@ services:
   mail-mongodb:
     image: mongo:7
     container_name: photo-prestige-mail-mongodb
-    ports:
-      - "27021:27017"
     environment:
       - MONGO_INITDB_DATABASE=mail-service
     volumes:
