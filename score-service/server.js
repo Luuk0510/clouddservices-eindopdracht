@@ -6,27 +6,6 @@ var logger = require('./utils/logger');
 var rabbitmq = require('./utils/rabbitmq');
 var scoreService = require('./services/scoreService');
 
-function subscribeToSubmissionUploaded() {
-  rabbitmq.subscribe(
-    'score-service.submission-uploaded.v1',
-    'submission.uploaded.v1',
-    scoreService.handleSubmissionUploadedEvent
-  ).then(function() {
-    logger.info('rabbitmq.subscribed', {
-      queue: 'score-service.submission-uploaded.v1',
-      routingKey: 'submission.uploaded.v1'
-    });
-  }).catch(function(error) {
-    logger.error('rabbitmq.subscribe_failed', {
-      queue: 'score-service.submission-uploaded.v1',
-      routingKey: 'submission.uploaded.v1',
-      message: error.message
-    });
-
-    setTimeout(subscribeToSubmissionUploaded, 5000);
-  });
-}
-
 function subscribeToDeadlineReached() {
   rabbitmq.subscribe(
     'score-service.clock.deadline-reached.v1',
@@ -74,7 +53,6 @@ connectDatabase(env.mongoUri).then(function() {
     // reconnect is handled in utils/rabbitmq
   });
 
-  subscribeToSubmissionUploaded();
   subscribeToDeadlineReached();
   subscribeToTargetDeleted();
 

@@ -68,32 +68,6 @@ function serializeSubmission(submission) {
   };
 }
 
-function parseSubmissionUploadedMessage(message) {
-  if (!message || typeof message !== 'object') {
-    throw new Error('submission.uploaded.v1 message must be an object');
-  }
-
-  var targetId = String(message.targetId || '').trim();
-  var submissionId = String(message.submissionId || '').trim();
-  var userId = String(message.userId || '').trim();
-  var imageUrl = normalizeImageUrl(message.imageUrl);
-  var userEmail = String(message.userEmail || '').trim();
-  var targetImageUrl = normalizeImageUrl(message.targetImageUrl);
-
-  if (!targetId || !submissionId || !userId || !imageUrl || !targetImageUrl) {
-    throw new Error('submission.uploaded.v1 message is missing required fields');
-  }
-
-  return {
-    targetId: targetId,
-    submissionId: submissionId,
-    userId: userId,
-    userEmail: userEmail,
-    imageUrl: imageUrl,
-    targetImageUrl: targetImageUrl
-  };
-}
-
 function publishScoreCalculated(submission, sourceSubmissionId) {
   var payload = {
     scoreId: String(submission._id),
@@ -322,50 +296,6 @@ exports.deleteSubmission = async function deleteSubmission(input) {
   return {
     message: 'Submission deleted',
     submissionId: submission._id
-  };
-};
-
-exports.handleSubmissionUploadedEvent = async function handleSubmissionUploadedEvent(message) {
-  logger.info('submission.received', {
-    routingKey: 'submission.uploaded.v1',
-    submissionId: message.submissionId,
-    targetId: message.targetId
-  });
-  
-  var parsed = parseSubmissionUploadedMessage(message);
-  var similarityScore = await calculateScore(parsed.targetImageUrl, parsed.imageUrl);
-
-  logger.info('score.calculated', {
-    submissionId: parsed.submissionId,
-    targetId: parsed.targetId,
-    similarityScore: similarityScore
-  });
-
-  var submission = await Submission.findOneAndUpdate({
-    sourceSubmissionId: parsed.submissionId
-  }, {
-    $set: {
-      targetId: parsed.targetId,
-      userId: parsed.userId,
-      userEmail: parsed.userEmail,
-      imageUrl: parsed.imageUrl,
-      similarityScore: similarityScore
-    },
-    $setOnInsert: {
-      sourceSubmissionId: parsed.submissionId
-    }
-  }, {
-    new: true,
-    upsert: true,
-    setDefaultsOnInsert: true
-  });
-
-  publishScoreCalculated(submission, parsed.submissionId);
-
-  return {
-    submissionId: parsed.submissionId,
-    scoreId: String(submission._id),
-    similarityScore: similarityScore
   };
 };
 

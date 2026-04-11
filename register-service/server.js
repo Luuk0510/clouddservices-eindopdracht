@@ -7,35 +7,6 @@ var rabbitmq = require('./utils/rabbitmq');
 var clockEventService = require('./services/clockEventService');
 var SUBSCRIBE_RETRY_DELAY_MS = 5000;
 
-function subscribeToRegistrationCreated() {
-  rabbitmq.subscribe(
-    'register-service.registration.created',
-    'registration.created',
-    function(message) {
-      logger.info('rabbitmq.received', {
-        routingKey: 'registration.created',
-        targetId: message.targetId,
-        userId: message.userId,
-        userEmail: message.userEmail
-      });
-    }
-  ).then(function() {
-    logger.info('rabbitmq.subscribed', {
-      queue: 'register-service.registration.created',
-      routingKey: 'registration.created'
-    });
-  }).catch(function(error) {
-    logger.error('rabbitmq.subscribe_failed', {
-      queue: 'register-service.registration.created',
-      routingKey: 'registration.created',
-      message: error.message,
-      retryInMs: SUBSCRIBE_RETRY_DELAY_MS
-    });
-
-    setTimeout(subscribeToRegistrationCreated, SUBSCRIBE_RETRY_DELAY_MS);
-  });
-}
-
 function subscribeToDeadlineReached() {
   rabbitmq.subscribe(
     'register-service.clock.deadline-reached.v1',
@@ -101,7 +72,6 @@ connectDatabase(env.mongoUri).then(function() {
     // connect mislukt – reconnect wordt intern afgehandeld door rabbitmq util
   });
 
-  subscribeToRegistrationCreated();
   subscribeToDeadlineReached();
   subscribeToTargetDeleted();
 
