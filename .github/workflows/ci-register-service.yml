@@ -1,4 +1,4 @@
-name: CI auth-service
+name: CI register-service
 
 on:
   push:
@@ -8,11 +8,11 @@ on:
   workflow_dispatch:
 
 jobs:
-  auth-service:
+  register-service:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: auth-service
+        working-directory: register-service
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
