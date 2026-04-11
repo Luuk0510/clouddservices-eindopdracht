@@ -1,6 +1,5 @@
 var Submission = require('../models/Submission');
 var Winner = require('../models/Winner');
-var env = require('../config/env');
 var imaggaClient = require('./imaggaClient');
 var authServiceClient = require('./authServiceClient');
 var registerServiceClient = require('./registerServiceClient');
