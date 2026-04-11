@@ -40,6 +40,20 @@ De applicatie is daarna bereikbaar op:
 http://localhost:3000
 ```
 
+Monitoring services:
+
+```text
+Prometheus: http://localhost:9090
+Grafana: http://localhost:3001
+```
+
+Grafana standaard login:
+
+```text
+user: admin
+password: admin123
+```
+
 Stoppen:
 
 ```bash
@@ -49,6 +63,12 @@ docker compose down
 Scalen voorbeeld:
 ```bash
 docker compose scale target-service=1
+```
+
+Monitoring stack starten (indien nog niet actief):
+
+```bash
+docker compose up -d prometheus blackbox-exporter grafana
 ```
 
 
