@@ -1,6 +1,7 @@
 var express = require('express');
 
 var Target = require('../models/Target');
+var Vote = require('../models/Vote');
 var authenticate = require('../middleware/authenticate');
 var authorizeRole = require('../middleware/authorizeRole');
 var rabbitmq = require('../utils/rabbitmq');
@@ -31,6 +32,23 @@ function parseCoordinates(latValue, lngValue) {
   return {
     lat: lat,
     lng: lng
+  };
+}
+
+async function buildVoteSummary(targetId) {
+  var thumbsUp = await Vote.countDocuments({
+    targetId: String(targetId),
+    vote: 'up'
+  });
+  var thumbsDown = await Vote.countDocuments({
+    targetId: String(targetId),
+    vote: 'down'
+  });
+
+  return {
+    targetId: String(targetId),
+    thumbsUp: thumbsUp,
+    thumbsDown: thumbsDown
   };
 }
 
@@ -203,11 +221,74 @@ router.get('/:targetId', async function(req, res) {
     }
 
     res.status(200).json({
-      target: target
+      target: target,
+      votes: await buildVoteSummary(target._id)
     });
   } catch (error) {
     res.status(400).json({
       message: 'Failed to load target',
+      error: error.message
+    });
+  }
+});
+
+router.get('/:targetId/votes', async function(req, res) {
+  try {
+    var target = await Target.findById(req.params.targetId);
+
+    if (!target) {
+      return res.status(404).json({
+        message: 'Target not found'
+      });
+    }
+
+    res.status(200).json(await buildVoteSummary(target._id));
+  } catch (error) {
+    res.status(400).json({
+      message: 'Failed to load votes',
+      error: error.message
+    });
+  }
+});
+
+router.post('/:targetId/vote', authenticate, authorizeRole('participant'), async function(req, res) {
+  try {
+    var vote = String(req.body.vote || '').trim().toLowerCase();
+
+    if (vote !== 'up' && vote !== 'down') {
+      return res.status(400).json({
+        message: 'vote must be up or down'
+      });
+    }
+
+    var target = await Target.findById(req.params.targetId);
+
+    if (!target) {
+      return res.status(404).json({
+        message: 'Target not found'
+      });
+    }
+
+    await Vote.findOneAndUpdate({
+      targetId: String(target._id),
+      userId: req.auth.userId
+    }, {
+      $set: {
+        vote: vote
+      }
+    }, {
+      upsert: true,
+      setDefaultsOnInsert: true
+    });
+
+    res.status(200).json({
+      message: 'Vote saved',
+      vote: vote,
+      votes: await buildVoteSummary(target._id)
+    });
+  } catch (error) {
+    res.status(400).json({
+      message: 'Failed to save vote',
       error: error.message
     });
   }
@@ -269,6 +350,7 @@ router.delete('/:targetId', authenticate, authorizeRole('target-owner'), async f
       });
     }
 
+    await Vote.deleteMany({ targetId: String(target._id) });
     await Target.deleteOne({ _id: target._id });
 
     res.status(200).json({
