@@ -1,6 +1,7 @@
 var express = require('express');
 
 var Target = require('../models/Target');
+var Submission = require('../models/Submission');
 var authenticate = require('../middleware/authenticate');
 var authorizeRole = require('../middleware/authorizeRole');
 var rabbitmq = require('../utils/rabbitmq');
@@ -32,6 +33,43 @@ function parseCoordinates(latValue, lngValue) {
     lat: lat,
     lng: lng
   };
+}
+
+function normalizeImageUrl(value) {
+  return String(value || '').trim();
+}
+
+function calculateSimilarityScore(targetUrl, submissionUrl) {
+  var a = normalizeImageUrl(targetUrl);
+  var b = normalizeImageUrl(submissionUrl);
+
+  if (!a || !b) {
+    return 0;
+  }
+
+  var aTokens = a.split(/[^a-z0-9]+/).filter(Boolean);
+  var bTokens = b.split(/[^a-z0-9]+/).filter(Boolean);
+  var seen = {};
+  var intersection = 0;
+
+  for (var i = 0; i < aTokens.length; i += 1) {
+    seen[aTokens[i]] = true;
+  }
+
+  for (var j = 0; j < bTokens.length; j += 1) {
+    if (seen[bTokens[j]]) {
+      intersection += 1;
+      seen[bTokens[j]] = false;
+    }
+  }
+
+  var union = aTokens.length + bTokens.length - intersection;
+
+  if (union <= 0) {
+    return 0;
+  }
+
+  return Math.round((intersection / union) * 100);
 }
 
 router.get('/', async function(req, res) {
@@ -269,6 +307,7 @@ router.delete('/:targetId', authenticate, authorizeRole('target-owner'), async f
       });
     }
 
+    await Submission.deleteMany({ targetId: target._id });
     await Target.deleteOne({ _id: target._id });
 
     res.status(200).json({
@@ -278,6 +317,145 @@ router.delete('/:targetId', authenticate, authorizeRole('target-owner'), async f
   } catch (error) {
     res.status(400).json({
       message: 'Failed to delete target',
+      error: error.message
+    });
+  }
+});
+
+router.post('/:targetId/submissions', authenticate, authorizeRole('participant', 'target-owner'), async function(req, res) {
+  try {
+    await closeExpiredTargets();
+
+    var target = await Target.findById(req.params.targetId);
+
+    if (!target) {
+      return res.status(404).json({
+        message: 'Target not found'
+      });
+    }
+
+    if (target.status !== 'active') {
+      return res.status(400).json({
+        message: 'Target is closed, no submissions accepted'
+      });
+    }
+
+    var imageUrl = normalizeImageUrl(req.body.imageUrl);
+
+    if (!imageUrl) {
+      return res.status(400).json({
+        message: 'imageUrl is required'
+      });
+    }
+
+    if (imageUrl === normalizeImageUrl(target.imageUrl)) {
+      return res.status(400).json({
+        message: 'Submission must be a similar photo, not the exact same image URL'
+      });
+    }
+
+    var similarityScore = calculateSimilarityScore(target.imageUrl, imageUrl);
+    var totalScore = Math.round(similarityScore * 0.8 + 20);
+
+    if (totalScore > 100) {
+      totalScore = 100;
+    }
+
+    var submission = await Submission.create({
+      targetId: target._id,
+      userId: req.auth.userId,
+      userEmail: req.auth.email || '',
+      imageUrl: imageUrl,
+      similarityScore: similarityScore,
+      totalScore: totalScore
+    });
+
+    rabbitmq.publish('submission.uploaded.v1', {
+      submissionId: String(submission._id),
+      targetId: String(target._id),
+      userId: submission.userId,
+      userEmail: submission.userEmail,
+      imageUrl: submission.imageUrl,
+      targetImageUrl: target.imageUrl,
+      submittedAt: submission.createdAt.toISOString()
+    });
+
+    res.status(201).json({
+      message: 'Submission created',
+      submission: submission
+    });
+  } catch (error) {
+    res.status(400).json({
+      message: 'Failed to create submission',
+      error: error.message
+    });
+  }
+});
+
+router.get('/:targetId/score', authenticate, async function(req, res) {
+  try {
+    var target = await Target.findById(req.params.targetId);
+
+    if (!target) {
+      return res.status(404).json({
+        message: 'Target not found'
+      });
+    }
+
+    var submission = await Submission.findOne({
+      targetId: target._id,
+      userId: req.auth.userId
+    }).sort({ totalScore: -1, createdAt: 1 });
+
+    if (!submission) {
+      return res.status(404).json({
+        message: 'No submission found for this participant on this target'
+      });
+    }
+
+    res.status(200).json({
+      targetId: target._id,
+      userId: req.auth.userId,
+      score: {
+        similarityScore: submission.similarityScore,
+        totalScore: submission.totalScore
+      },
+      submissionId: submission._id,
+      submittedAt: submission.createdAt
+    });
+  } catch (error) {
+    res.status(400).json({
+      message: 'Failed to load score',
+      error: error.message
+    });
+  }
+});
+
+router.delete('/submissions/:submissionId', authenticate, async function(req, res) {
+  try {
+    var submission = await Submission.findById(req.params.submissionId);
+
+    if (!submission) {
+      return res.status(404).json({
+        message: 'Submission not found'
+      });
+    }
+
+    if (submission.userId !== req.auth.userId) {
+      return res.status(403).json({
+        message: 'You can only delete your own upload'
+      });
+    }
+
+    await Submission.deleteOne({ _id: submission._id });
+
+    res.status(200).json({
+      message: 'Submission deleted',
+      submissionId: submission._id
+    });
+  } catch (error) {
+    res.status(400).json({
+      message: 'Failed to delete submission',
       error: error.message
     });
   }
