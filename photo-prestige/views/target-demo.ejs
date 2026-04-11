@@ -96,21 +96,6 @@
           <pre id="target-detail-result">Nog geen request verstuurd.</pre>
         </section>
 
-        <section class="card">
-          <h2>Thumbs up/down</h2>
-          <form id="target-vote-form">
-            <label for="target-vote-id">Target ID</label>
-            <input id="target-vote-id" name="targetId" type="text" placeholder="Mongo ObjectId" required />
-
-            <div class="button-row">
-              <button id="target-votes-button" type="button">Votes ophalen</button>
-              <button id="target-vote-up-button" type="button" data-role-required="participant">Thumbs up</button>
-              <button id="target-vote-down-button" type="button" data-role-required="participant">Thumbs down</button>
-            </div>
-          </form>
-          <pre id="target-vote-result">Nog geen request verstuurd.</pre>
-        </section>
-
         <section class="card" data-role-required="target-owner">
           <h2>Target verwijderen</h2>
           <form id="target-delete-form">
@@ -282,54 +267,6 @@
         } catch (error) {
           showJson('target-detail-result', { error: error.message });
         }
-      });
-
-      function getVoteTargetId() {
-        return String(document.getElementById('target-vote-id').value || '').trim();
-      }
-
-      async function loadVotes() {
-        const targetId = getVoteTargetId();
-        if (!targetId) {
-          showJson('target-vote-result', { message: 'Vul eerst een Target ID in.' });
-          return;
-        }
-
-        try {
-          const result = await requestJson('/api/v1/targets/' + encodeURIComponent(targetId) + '/votes', {
-            method: 'GET'
-          });
-          showJson('target-vote-result', result);
-        } catch (error) {
-          showJson('target-vote-result', { error: error.message });
-        }
-      }
-
-      async function saveVote(vote) {
-        const targetId = getVoteTargetId();
-        if (!targetId) {
-          showJson('target-vote-result', { message: 'Vul eerst een Target ID in.' });
-          return;
-        }
-
-        try {
-          const result = await requestJson('/api/v1/targets/' + encodeURIComponent(targetId) + '/vote', {
-            method: 'POST',
-            headers: buildAuthHeaders(),
-            body: JSON.stringify({ vote: vote })
-          });
-          showJson('target-vote-result', result);
-        } catch (error) {
-          showJson('target-vote-result', { error: error.message });
-        }
-      }
-
-      document.getElementById('target-votes-button').addEventListener('click', loadVotes);
-      document.getElementById('target-vote-up-button').addEventListener('click', function() {
-        saveVote('up');
-      });
-      document.getElementById('target-vote-down-button').addEventListener('click', function() {
-        saveVote('down');
       });
 
       document.getElementById('target-delete-button').addEventListener('click', async function() {
