@@ -23,6 +23,10 @@ var winnerSchema = new mongoose.Schema({
     type: Number,
     default: null
   },
+  finalScore: {
+    type: Number,
+    default: null
+  },
   submittedAt: {
     type: Date,
     default: null

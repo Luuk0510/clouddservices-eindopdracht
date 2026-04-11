@@ -93,6 +93,7 @@ exports.handleWinnerCalculatedEvent = async function handleWinnerCalculatedEvent
       winnerSubmissionId: message.winnerSubmissionId,
       winnerUserId: message.winnerUserId,
       similarityScore: participantScore.similarityScore,
+      finalScore: participantScore.finalScore,
       submittedAt: participantScore.submittedAt,
       isWinner: registrations[i].userId === message.winnerUserId
     });
@@ -172,6 +173,22 @@ exports.handleScoreCalculatedEvent = async function handleScoreCalculatedEvent(m
     targetId: message.targetId,
     userId: message.userId,
     submissionId: message.submissionId
+  });
+};
+
+exports.handleTargetDeletedEvent = async function handleTargetDeletedEvent(message) {
+  if (!message || !message.targetId) {
+    throw new Error('target.deleted.v1 is missing required fields');
+  }
+
+  var result = await MailRegistration.deleteMany({
+    targetId: message.targetId
+  });
+
+  logger.info('mail.event_processed', {
+    routingKey: 'target.deleted.v1',
+    targetId: message.targetId,
+    deletedRegistrations: result.deletedCount || 0
   });
 };
 

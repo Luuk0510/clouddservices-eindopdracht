@@ -48,6 +48,27 @@ function subscribeToDeadlineReached() {
   });
 }
 
+function subscribeToTargetDeleted() {
+  rabbitmq.subscribe(
+    'score-service.target-deleted.v1',
+    'target.deleted.v1',
+    scoreService.handleTargetDeletedEvent
+  ).then(function() {
+    logger.info('rabbitmq.subscribed', {
+      queue: 'score-service.target-deleted.v1',
+      routingKey: 'target.deleted.v1'
+    });
+  }).catch(function(error) {
+    logger.error('rabbitmq.subscribe_failed', {
+      queue: 'score-service.target-deleted.v1',
+      routingKey: 'target.deleted.v1',
+      message: error.message
+    });
+
+    setTimeout(subscribeToTargetDeleted, 5000);
+  });
+}
+
 connectDatabase(env.mongoUri).then(function() {
   rabbitmq.connect().catch(function() {
     // reconnect is handled in utils/rabbitmq
@@ -55,6 +76,7 @@ connectDatabase(env.mongoUri).then(function() {
 
   subscribeToSubmissionUploaded();
   subscribeToDeadlineReached();
+  subscribeToTargetDeleted();
 
   var server = app.listen(env.port, function() {
     logger.info('server.started', { port: env.port });

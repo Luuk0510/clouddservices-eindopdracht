@@ -7,12 +7,14 @@ module.exports = function buildScoreEmail(payload) {
   var deadline = formatDateTime(payload.targetDeadline);
   var subject = 'Score available';
   var resultText = payload.isWinner ? 'You won this competition.' : 'The competition result is now available.';
+  var finalScore = payload.finalScore !== undefined && payload.finalScore !== null ? payload.finalScore : null;
   var text = [
     'The score is now available.',
     '',
     'Title: ' + title,
     'Target ID: ' + targetId,
     'Similarity score: ' + (payload.similarityScore !== undefined && payload.similarityScore !== null ? payload.similarityScore + '%' : 'unknown'),
+    finalScore !== null ? 'Final score: ' + finalScore : null,
     'Deadline: ' + deadline,
     'City: ' + (payload.targetCity || 'unknown'),
     'Location: ' + (payload.targetLocationDescription || 'unknown'),
@@ -26,6 +28,7 @@ module.exports = function buildScoreEmail(payload) {
     '<ul>',
     '<li><strong>Target ID:</strong> ' + targetId + '</li>',
     '<li><strong>Similarity score:</strong> ' + (payload.similarityScore !== undefined && payload.similarityScore !== null ? payload.similarityScore + '%' : 'unknown') + '</li>',
+    finalScore !== null ? '<li><strong>Final score:</strong> ' + finalScore + '</li>' : '',
     '<li><strong>Deadline:</strong> ' + deadline + '</li>',
     '<li><strong>City:</strong> ' + (payload.targetCity || 'unknown') + '</li>',
     '<li><strong>Location:</strong> ' + (payload.targetLocationDescription || 'unknown') + '</li>',

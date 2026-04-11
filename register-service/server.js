@@ -67,6 +67,35 @@ function subscribeToDeadlineReached() {
   });
 }
 
+function subscribeToTargetDeleted() {
+  rabbitmq.subscribe(
+    'register-service.target-deleted.v1',
+    'target.deleted.v1',
+    function(message) {
+      return clockEventService.markTargetDeleted(message).then(function() {
+        logger.info('rabbitmq.received', {
+          routingKey: 'target.deleted.v1',
+          targetId: message.targetId
+        });
+      });
+    }
+  ).then(function() {
+    logger.info('rabbitmq.subscribed', {
+      queue: 'register-service.target-deleted.v1',
+      routingKey: 'target.deleted.v1'
+    });
+  }).catch(function(error) {
+    logger.error('rabbitmq.subscribe_failed', {
+      queue: 'register-service.target-deleted.v1',
+      routingKey: 'target.deleted.v1',
+      message: error.message,
+      retryInMs: SUBSCRIBE_RETRY_DELAY_MS
+    });
+
+    setTimeout(subscribeToTargetDeleted, SUBSCRIBE_RETRY_DELAY_MS);
+  });
+}
+
 connectDatabase(env.mongoUri).then(function() {
   rabbitmq.connect().catch(function() {
     // connect mislukt – reconnect wordt intern afgehandeld door rabbitmq util
@@ -74,6 +103,7 @@ connectDatabase(env.mongoUri).then(function() {
 
   subscribeToRegistrationCreated();
   subscribeToDeadlineReached();
+  subscribeToTargetDeleted();
 
   var server = app.listen(env.port, function() {
     logger.info('server.started', { port: env.port });

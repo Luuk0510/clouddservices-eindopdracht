@@ -350,12 +350,21 @@ router.delete('/:targetId', authenticate, authorizeRole('target-owner'), async f
       });
     }
 
-    await Vote.deleteMany({ targetId: String(target._id) });
+    var targetId = String(target._id);
+
+    await Vote.deleteMany({ targetId: targetId });
     await Target.deleteOne({ _id: target._id });
+
+    rabbitmq.publish('target.deleted.v1', {
+      targetId: targetId,
+      ownerId: target.ownerId,
+      ownerEmail: target.ownerEmail,
+      deletedAt: new Date().toISOString()
+    });
 
     res.status(200).json({
       message: 'Target deleted',
-      targetId: target._id
+      targetId: targetId
     });
   } catch (error) {
     res.status(400).json({

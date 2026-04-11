@@ -60,10 +60,14 @@ async function markDeadlineReached() {
 async function markReminderSent() {
   var now = new Date();
   var reminderThreshold = new Date(now.getTime() + env.deadlineReminderMinutes * 60 * 1000);
+  var reminderIntervalStartedAt = new Date(now.getTime() - env.deadlineReminderIntervalMinutes * 60 * 1000);
 
   var clock = await Clock.findOneAndUpdate({
     status: 'running',
-    reminderSentAt: null,
+    $or: [
+      { reminderSentAt: null },
+      { reminderSentAt: { $lte: reminderIntervalStartedAt } }
+    ],
     deadlineAt: {
       $gt: now,
       $lte: reminderThreshold
@@ -146,6 +150,22 @@ exports.handleTargetCreatedEvent = async function handleTargetCreatedEvent(messa
     targetId: clock.targetId,
     deadlineAt: clock.deadlineAt.toISOString(),
     reminderSentAt: clock.reminderSentAt ? clock.reminderSentAt.toISOString() : null
+  });
+};
+
+exports.handleTargetDeletedEvent = async function handleTargetDeletedEvent(message) {
+  if (!message || !message.targetId) {
+    throw new Error('target.deleted.v1 missing required fields');
+  }
+
+  var result = await Clock.deleteOne({
+    targetId: message.targetId
+  });
+
+  logger.info('clock.deleted', {
+    routingKey: 'target.deleted.v1',
+    targetId: message.targetId,
+    deletedClocks: result.deletedCount || 0
   });
 };
 
