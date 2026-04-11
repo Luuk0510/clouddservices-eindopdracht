@@ -50,6 +50,11 @@ Scalen voorbeeld:
 ```bash
 docker compose scale target-service=1
 ```
+Admin seeder
+```bash
+docker compose run --rm auth-service npm run seed:owner
+```
+
 
 
 ---
