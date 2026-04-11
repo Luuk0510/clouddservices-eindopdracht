@@ -40,6 +40,43 @@ services:
     volumes:
       - ./nginx/gateway-lb.conf:/etc/nginx/conf.d/default.conf:ro
 
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    depends_on:
+      - blackbox-exporter
+    ports:
+      - "9090:9090"
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.enable-lifecycle
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+
+  blackbox-exporter:
+    image: prom/blackbox-exporter:v0.25.0
+    ports:
+      - "9115:9115"
+    command:
+      - --config.file=/etc/blackbox_exporter/config.yml
+    volumes:
+      - ./monitoring/blackbox/config.yml:/etc/blackbox_exporter/config.yml:ro
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    depends_on:
+      - prometheus
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin123}
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./monitoring/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+
   read-service:
     build:
       context: ./read-service
@@ -207,3 +244,5 @@ volumes:
   clock_mongodb_data:
   mail_mongodb_data:
   rabbitmq_data:
+  prometheus_data:
+  grafana_data:

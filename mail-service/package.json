@@ -5,6 +5,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
+    "lint": "eslint .",
     "test": "jest --runInBand"
   },
   "dependencies": {
@@ -16,6 +17,7 @@
     "morgan": "^1.10.1"
   },
   "devDependencies": {
+    "eslint": "^8.57.1",
     "jest": "^30.2.0",
     "supertest": "^7.1.4"
   }
