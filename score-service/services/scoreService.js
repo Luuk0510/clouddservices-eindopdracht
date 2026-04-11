@@ -190,6 +190,8 @@ exports.createSubmission = async function createSubmission(input) {
     similarityScore: similarityScore
   });
 
+  publishScoreCalculated(submission, String(submission._id));
+
   return {
     message: 'Submission created',
     submission: serializeSubmission(submission)

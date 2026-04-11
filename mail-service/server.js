@@ -52,6 +52,28 @@ function subscribeToWinnerCalculated() {
   });
 }
 
+function subscribeToScoreCalculated() {
+  rabbitmq.subscribe(
+    'mail-service.score.calculated.v1',
+    'score.calculated.v1',
+    mailEventService.handleScoreCalculatedEvent
+  ).then(function() {
+    logger.info('rabbitmq.subscribed', {
+      queue: 'mail-service.score.calculated.v1',
+      routingKey: 'score.calculated.v1'
+    });
+  }).catch(function(error) {
+    logger.error('rabbitmq.subscribe_failed', {
+      queue: 'mail-service.score.calculated.v1',
+      routingKey: 'score.calculated.v1',
+      message: error.message,
+      retryInMs: SUBSCRIBE_RETRY_DELAY_MS
+    });
+
+    setTimeout(subscribeToScoreCalculated, SUBSCRIBE_RETRY_DELAY_MS);
+  });
+}
+
 function subscribeToDeadlineReminder() {
   rabbitmq.subscribe(
     'mail-service.clock.deadline-reminder.v1',
@@ -99,6 +121,7 @@ function subscribeToDeadlineReached() {
 connectDatabase(env.mongoUri).then(function() {
   rabbitmq.connect().then(function() {
     subscribeToRegistrationCreated();
+    subscribeToScoreCalculated();
     subscribeToWinnerCalculated();
     subscribeToDeadlineReminder();
     subscribeToDeadlineReached();
