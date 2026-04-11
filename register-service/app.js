@@ -11,6 +11,10 @@ app.use(logger.requestLogger);
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+app.get('/health', function(req, res) {
+  res.status(200).json({ status: 'ok' });
+});
+
 app.use(registerRoutes);
 app.use(notFoundHandler);
 app.use(errorHandler);

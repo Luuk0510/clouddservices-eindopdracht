@@ -40,6 +40,20 @@ De applicatie is daarna bereikbaar op:
 http://localhost:3000
 ```
 
+Monitoring services:
+
+```text
+Prometheus: http://localhost:9090
+Grafana: http://localhost:3001
+```
+
+Grafana standaard login:
+
+```text
+user: admin
+password: admin123
+```
+
 Stoppen:
 
 ```bash
@@ -51,13 +65,26 @@ Scalen voorbeeld:
 docker compose scale target-service=1
 ```
 
+Monitoring stack starten (indien nog niet actief):
+
+```bash
+docker compose up -d prometheus blackbox-exporter grafana
+```
+
 
 ---
 
-## Teststatus
+## CI Status per Service
 
-[![Node CI](https://github.com/Luuk0510/clouddservices-eindopdracht/actions/workflows/node-ci.yml/badge.svg)](https://github.com/Luuk0510/clouddservices-eindopdracht/actions/workflows/node-ci.yml)
+Elke service wordt automatisch gecontroleerd op **code guidelines (ESLint)** en **tests** bij elke push.
 
-```bash
-npm test
-```
+| Service | Status |
+|---|---|
+| auth-service | [![CI auth-service](https://github.com/Luuk0510/clouddservices-eindopdracht/actions/workflows/node-ci.yml/badge.svg)](https://github.com/Luuk0510/clouddservices-eindopdracht/actions/workflows/node-ci.yml) |
+| clock-service | [![CI clock-service](https://github.com/Luuk0510/clouddservices-eindopdracht/actions/workflows/ci-clock-service.yml/badge.svg)](https://github.com/Luuk0510/clouddservices-eindopdracht/actions/workflows/ci-clock-service.yml) |
+| mail-service | [![CI mail-service](https://github.com/Luuk0510/clouddservices-eindopdracht/actions/workflows/ci-mail-service.yml/badge.svg)](https://github.com/Luuk0510/clouddservices-eindopdracht/actions/workflows/ci-mail-service.yml) |
+| photo-prestige | [![CI photo-prestige](https://github.com/Luuk0510/clouddservices-eindopdracht/actions/workflows/ci-photo-prestige.yml/badge.svg)](https://github.com/Luuk0510/clouddservices-eindopdracht/actions/workflows/ci-photo-prestige.yml) |
+| read-service | [![CI read-service](https://github.com/Luuk0510/clouddservices-eindopdracht/actions/workflows/ci-read-service.yml/badge.svg)](https://github.com/Luuk0510/clouddservices-eindopdracht/actions/workflows/ci-read-service.yml) |
+| register-service | [![CI register-service](https://github.com/Luuk0510/clouddservices-eindopdracht/actions/workflows/ci-register-service.yml/badge.svg)](https://github.com/Luuk0510/clouddservices-eindopdracht/actions/workflows/ci-register-service.yml) |
+| score-service | [![CI score-service](https://github.com/Luuk0510/clouddservices-eindopdracht/actions/workflows/ci-score-service.yml/badge.svg)](https://github.com/Luuk0510/clouddservices-eindopdracht/actions/workflows/ci-score-service.yml) |
+| target-service | [![CI target-service](https://github.com/Luuk0510/clouddservices-eindopdracht/actions/workflows/ci-target-service.yml/badge.svg)](https://github.com/Luuk0510/clouddservices-eindopdracht/actions/workflows/ci-target-service.yml) |
