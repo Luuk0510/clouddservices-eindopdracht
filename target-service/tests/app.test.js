@@ -46,11 +46,10 @@ describe('target-service app', function() {
     expect(response.body.message).toBe('Missing bearer token');
   });
 
-  it('rejects invalid bearer tokens for submission routes', async function() {
+  it('rejects invalid bearer tokens for target deletion', async function() {
     var response = await request(app)
-      .post('/507f1f77bcf86cd799439011/submissions')
-      .set('Authorization', 'Bearer fake-token')
-      .send({ imageUrl: 'https://example.com/image.jpg' });
+      .delete('/507f1f77bcf86cd799439011')
+      .set('Authorization', 'Bearer fake-token');
 
     expect(response.status).toBe(401);
     expect(response.body.message).toBe('Invalid token');
