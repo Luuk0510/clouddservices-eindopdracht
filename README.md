@@ -76,6 +76,74 @@ Monitoring stack starten (indien nog niet actief):
 docker compose up -d prometheus blackbox-exporter grafana
 ```
 
+## Docker Swarm lokaal
+
+Docker Swarm gebruikt images in plaats van `build:` uit Docker Compose. Bouw daarom eerst lokale images:
+
+```bash
+bash scripts/build-swarm-images.sh
+```
+
+Start Swarm als dat nog niet actief is:
+
+```bash
+docker swarm init
+```
+
+Deploy de stack:
+
+```bash
+docker stack deploy -c docker-stack.yml photo
+```
+
+Bekijk de services en replicas:
+
+```bash
+docker stack services photo
+```
+
+Voorbeeld van horizontal scaling zonder rebuild:
+
+```bash
+docker service scale photo_target-service=3
+docker service scale photo_photo-prestige=3
+```
+
+Andere stateless services schalen:
+
+```bash
+docker service scale photo_auth-service=3
+docker service scale photo_register-service=3
+docker service scale photo_score-service=3
+docker service scale photo_read-service=3
+```
+
+Bekijk de tasks van een service:
+
+```bash
+docker service ps photo_target-service
+```
+
+De gateway blijft bereikbaar op:
+
+```text
+http://localhost:3000
+```
+
+Ruim de Swarm stack op:
+
+```bash
+docker stack rm photo
+```
+
+Stop Swarm lokaal als je het niet meer nodig hebt:
+
+```bash
+docker swarm leave --force
+```
+
+Schaal vooral stateless services zoals `photo-prestige`, `target-service`, `register-service`, `score-service`, `read-service` en `auth-service`. Laat databases, RabbitMQ en `clock-service` standaard op 1 replica.
+
 
 ---
 
