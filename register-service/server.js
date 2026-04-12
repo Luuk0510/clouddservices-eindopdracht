@@ -7,35 +7,6 @@ var rabbitmq = require('./utils/rabbitmq');
 var clockEventService = require('./services/clockEventService');
 var SUBSCRIBE_RETRY_DELAY_MS = 5000;
 
-function subscribeToRegistrationCreated() {
-  rabbitmq.subscribe(
-    'register-service.registration.created',
-    'registration.created',
-    function(message) {
-      logger.info('rabbitmq.received', {
-        routingKey: 'registration.created',
-        targetId: message.targetId,
-        userId: message.userId,
-        userEmail: message.userEmail
-      });
-    }
-  ).then(function() {
-    logger.info('rabbitmq.subscribed', {
-      queue: 'register-service.registration.created',
-      routingKey: 'registration.created'
-    });
-  }).catch(function(error) {
-    logger.error('rabbitmq.subscribe_failed', {
-      queue: 'register-service.registration.created',
-      routingKey: 'registration.created',
-      message: error.message,
-      retryInMs: SUBSCRIBE_RETRY_DELAY_MS
-    });
-
-    setTimeout(subscribeToRegistrationCreated, SUBSCRIBE_RETRY_DELAY_MS);
-  });
-}
-
 function subscribeToDeadlineReached() {
   rabbitmq.subscribe(
     'register-service.clock.deadline-reached.v1',
@@ -67,13 +38,42 @@ function subscribeToDeadlineReached() {
   });
 }
 
+function subscribeToTargetDeleted() {
+  rabbitmq.subscribe(
+    'register-service.target-deleted.v1',
+    'target.deleted.v1',
+    function(message) {
+      return clockEventService.markTargetDeleted(message).then(function() {
+        logger.info('rabbitmq.received', {
+          routingKey: 'target.deleted.v1',
+          targetId: message.targetId
+        });
+      });
+    }
+  ).then(function() {
+    logger.info('rabbitmq.subscribed', {
+      queue: 'register-service.target-deleted.v1',
+      routingKey: 'target.deleted.v1'
+    });
+  }).catch(function(error) {
+    logger.error('rabbitmq.subscribe_failed', {
+      queue: 'register-service.target-deleted.v1',
+      routingKey: 'target.deleted.v1',
+      message: error.message,
+      retryInMs: SUBSCRIBE_RETRY_DELAY_MS
+    });
+
+    setTimeout(subscribeToTargetDeleted, SUBSCRIBE_RETRY_DELAY_MS);
+  });
+}
+
 connectDatabase(env.mongoUri).then(function() {
   rabbitmq.connect().catch(function() {
     // connect mislukt – reconnect wordt intern afgehandeld door rabbitmq util
   });
 
-  subscribeToRegistrationCreated();
   subscribeToDeadlineReached();
+  subscribeToTargetDeleted();
 
   var server = app.listen(env.port, function() {
     logger.info('server.started', { port: env.port });

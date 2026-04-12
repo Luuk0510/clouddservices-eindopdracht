@@ -5,5 +5,6 @@ module.exports = {
   rabbitmqExchange: process.env.RABBITMQ_EXCHANGE || 'photo-prestige',
   rabbitmqReconnectDelayMs: Number(process.env.RABBITMQ_RECONNECT_DELAY_MS || 5000),
   deadlineReminderMinutes: Number(process.env.DEADLINE_REMINDER_MINUTES || 60),
+  deadlineReminderIntervalMinutes: Number(process.env.DEADLINE_REMINDER_INTERVAL_MINUTES || process.env.DEADLINE_REMINDER_MINUTES || 60),
   pollIntervalMs: Number(process.env.CLOCK_POLL_INTERVAL_MS || 5000)
 };

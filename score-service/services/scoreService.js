@@ -68,32 +68,6 @@ function serializeSubmission(submission) {
   };
 }
 
-function parseSubmissionUploadedMessage(message) {
-  if (!message || typeof message !== 'object') {
-    throw new Error('submission.uploaded.v1 message must be an object');
-  }
-
-  var targetId = String(message.targetId || '').trim();
-  var submissionId = String(message.submissionId || '').trim();
-  var userId = String(message.userId || '').trim();
-  var imageUrl = normalizeImageUrl(message.imageUrl);
-  var userEmail = String(message.userEmail || '').trim();
-  var targetImageUrl = normalizeImageUrl(message.targetImageUrl);
-
-  if (!targetId || !submissionId || !userId || !imageUrl || !targetImageUrl) {
-    throw new Error('submission.uploaded.v1 message is missing required fields');
-  }
-
-  return {
-    targetId: targetId,
-    submissionId: submissionId,
-    userId: userId,
-    userEmail: userEmail,
-    imageUrl: imageUrl,
-    targetImageUrl: targetImageUrl
-  };
-}
-
 function publishScoreCalculated(submission, sourceSubmissionId) {
   var payload = {
     scoreId: String(submission._id),
@@ -129,6 +103,42 @@ function publishWinnerCalculated(message, winnerSubmission) {
   };
 }
 
+function calculateFinalScore(submission, target) {
+  var similarityScore = Number(submission.similarityScore || 0);
+  var submittedAt = new Date(submission.createdAt);
+  var startedAt = target && target.createdAt ? new Date(target.createdAt) : null;
+  var deadlineAt = target && target.deadlineAt ? new Date(target.deadlineAt) : null;
+
+  if (!startedAt || !deadlineAt || Number.isNaN(startedAt.getTime()) || Number.isNaN(deadlineAt.getTime()) || deadlineAt <= startedAt) {
+    return similarityScore;
+  }
+
+  var elapsedMs = Math.max(0, submittedAt.getTime() - startedAt.getTime());
+  var durationMs = Math.max(1, deadlineAt.getTime() - startedAt.getTime());
+  var timePenalty = Math.min(20, (elapsedMs / durationMs) * 20);
+
+  return Math.max(0, Math.round((similarityScore - timePenalty) * 100) / 100);
+}
+
+function rankSubmissions(submissions, target) {
+  return submissions.map(function(submission) {
+    return {
+      submission: submission,
+      finalScore: calculateFinalScore(submission, target)
+    };
+  }).sort(function(a, b) {
+    if (b.finalScore !== a.finalScore) {
+      return b.finalScore - a.finalScore;
+    }
+
+    if (b.submission.similarityScore !== a.submission.similarityScore) {
+      return b.submission.similarityScore - a.submission.similarityScore;
+    }
+
+    return new Date(a.submission.createdAt).getTime() - new Date(b.submission.createdAt).getTime();
+  });
+}
+
 function serializeWinner(winner, winnerUserEmail) {
   var resolvedEmail = winnerUserEmail || winner.winnerUserEmail || null;
 
@@ -139,6 +149,7 @@ function serializeWinner(winner, winnerUserEmail) {
     winnerUserEmail: resolvedEmail,
     username: usernameFromEmail(resolvedEmail) || winner.winnerUserId || null,
     similarityScore: winner.similarityScore,
+    finalScore: winner.finalScore,
     submittedAt: winner.submittedAt ? winner.submittedAt.toISOString() : null,
     deadlineAt: winner.deadlineAt.toISOString(),
     calculatedAt: winner.calculatedAt.toISOString()
@@ -190,6 +201,8 @@ exports.createSubmission = async function createSubmission(input) {
     similarityScore: similarityScore
   });
 
+  publishScoreCalculated(submission, String(submission._id));
+
   return {
     message: 'Submission created',
     submission: serializeSubmission(submission)
@@ -234,18 +247,21 @@ exports.getAllScoresForTarget = async function getAllScoresForTarget(input) {
     throw new HttpError(403, 'Only the target owner can view all scores');
   }
 
-  var submissions = await Submission.find({ targetId: input.targetId }).sort({ similarityScore: -1, createdAt: 1 });
+  var submissions = await Submission.find({ targetId: input.targetId });
+  var rankedSubmissions = rankSubmissions(submissions, target);
 
   return {
     targetId: input.targetId,
-    winnerSubmissionId: submissions.length ? submissions[0]._id : null,
-    scores: submissions.map(function(submission, index) {
+    winnerSubmissionId: rankedSubmissions.length ? rankedSubmissions[0].submission._id : null,
+    scores: rankedSubmissions.map(function(row, index) {
+      var submission = row.submission;
       return {
         rank: index + 1,
         submissionId: submission._id,
         userId: submission.userId,
         userEmail: submission.userEmail,
         similarityScore: submission.similarityScore,
+        finalScore: row.finalScore,
         submittedAt: submission.createdAt
       };
     })
@@ -283,61 +299,34 @@ exports.deleteSubmission = async function deleteSubmission(input) {
   };
 };
 
-exports.handleSubmissionUploadedEvent = async function handleSubmissionUploadedEvent(message) {
-  logger.info('submission.received', {
-    routingKey: 'submission.uploaded.v1',
-    submissionId: message.submissionId,
-    targetId: message.targetId
-  });
-  
-  var parsed = parseSubmissionUploadedMessage(message);
-  var similarityScore = await calculateScore(parsed.targetImageUrl, parsed.imageUrl);
-
-  logger.info('score.calculated', {
-    submissionId: parsed.submissionId,
-    targetId: parsed.targetId,
-    similarityScore: similarityScore
-  });
-
-  var submission = await Submission.findOneAndUpdate({
-    sourceSubmissionId: parsed.submissionId
-  }, {
-    $set: {
-      targetId: parsed.targetId,
-      userId: parsed.userId,
-      userEmail: parsed.userEmail,
-      imageUrl: parsed.imageUrl,
-      similarityScore: similarityScore
-    },
-    $setOnInsert: {
-      sourceSubmissionId: parsed.submissionId
-    }
-  }, {
-    new: true,
-    upsert: true,
-    setDefaultsOnInsert: true
-  });
-
-  publishScoreCalculated(submission, parsed.submissionId);
-
-  return {
-    submissionId: parsed.submissionId,
-    scoreId: String(submission._id),
-    similarityScore: similarityScore
-  };
-};
-
 exports.handleDeadlineReachedEvent = async function handleDeadlineReachedEvent(message) {
   if (!message || !message.targetId || !message.deadlineAt) {
     throw new Error('clock.deadline-reached.v1 missing required fields');
   }
 
+  var target = null;
+
+  try {
+    target = await targetServiceClient.getTargetById(message.targetId, '');
+  } catch (error) {
+    logger.info('target.metadata_unavailable', {
+      targetId: message.targetId,
+      message: error.message
+    });
+  }
+
   var submissions = await Submission.find({
     targetId: message.targetId
-  }).sort({ similarityScore: -1, createdAt: 1 });
-  var winnerSubmission = submissions.length ? submissions[0] : null;
-  var target = await targetServiceClient.getTargetById(message.targetId, '');
+  });
+  var rankedSubmissions = rankSubmissions(submissions, target || {
+    deadlineAt: message.deadlineAt
+  });
+  var winnerRow = rankedSubmissions.length ? rankedSubmissions[0] : null;
+  var winnerSubmission = winnerRow ? winnerRow.submission : null;
   var payload = publishWinnerCalculated(message, winnerSubmission);
+  payload.finalScore = winnerRow ? winnerRow.finalScore : null;
+  payload.ownerId = message.ownerId || null;
+  payload.ownerEmail = message.ownerEmail || null;
 
   if (target) {
     payload.ownerId = target.ownerId || null;
@@ -350,13 +339,15 @@ exports.handleDeadlineReachedEvent = async function handleDeadlineReachedEvent(m
     payload.targetRadiusMeters = target.radiusMeters || null;
   }
 
-  payload.scores = submissions.map(function(submission, index) {
+  payload.scores = rankedSubmissions.map(function(row, index) {
+    var submission = row.submission;
     return {
       rank: index + 1,
       submissionId: String(submission._id),
       userId: submission.userId,
       userEmail: submission.userEmail,
       similarityScore: submission.similarityScore,
+      finalScore: row.finalScore,
       submittedAt: submission.createdAt.toISOString()
     };
   });
@@ -370,6 +361,7 @@ exports.handleDeadlineReachedEvent = async function handleDeadlineReachedEvent(m
       winnerUserId: payload.winnerUserId,
       winnerUserEmail: payload.winnerUserEmail,
       similarityScore: payload.similarityScore,
+      finalScore: payload.finalScore,
       submittedAt: payload.submittedAt ? new Date(payload.submittedAt) : null,
       deadlineAt: new Date(payload.deadlineAt),
       calculatedAt: new Date(payload.calculatedAt)
@@ -398,6 +390,22 @@ exports.handleDeadlineReachedEvent = async function handleDeadlineReachedEvent(m
     winnerSubmissionId: winnerSubmission ? String(winnerSubmission._id) : null,
     published: writeResult.upsertedCount === 1
   };
+};
+
+exports.handleTargetDeletedEvent = async function handleTargetDeletedEvent(message) {
+  if (!message || !message.targetId) {
+    throw new Error('target.deleted.v1 missing required fields');
+  }
+
+  var submissionsResult = await Submission.deleteMany({ targetId: message.targetId });
+  var winnersResult = await Winner.deleteMany({ targetId: message.targetId });
+
+  logger.info('score.target_deleted', {
+    routingKey: 'target.deleted.v1',
+    targetId: message.targetId,
+    deletedSubmissions: submissionsResult.deletedCount || 0,
+    deletedWinners: winnersResult.deletedCount || 0
+  });
 };
 
 exports.getWinnerForTarget = async function getWinnerForTarget(targetId, authToken) {

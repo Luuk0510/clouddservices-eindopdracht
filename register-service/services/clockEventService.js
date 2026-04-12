@@ -1,4 +1,5 @@
 var ClosedTarget = require('../models/ClosedTarget');
+var Registration = require('../models/Registration');
 
 exports.markTargetClosed = async function markTargetClosed(message) {
   if (!message || !message.targetId || !message.deadlineAt) {
@@ -27,4 +28,22 @@ exports.markTargetClosed = async function markTargetClosed(message) {
 exports.isTargetClosed = async function isTargetClosed(targetId) {
   var closedTarget = await ClosedTarget.findOne({ targetId: targetId });
   return Boolean(closedTarget);
+};
+
+exports.markTargetDeleted = async function markTargetDeleted(message) {
+  if (!message || !message.targetId) {
+    throw new Error('target.deleted.v1 missing required fields');
+  }
+
+  await Registration.updateMany({
+    targetId: message.targetId,
+    status: 'active'
+  }, {
+    $set: {
+      status: 'cancelled',
+      cancelledAt: new Date()
+    }
+  });
+
+  await ClosedTarget.deleteOne({ targetId: message.targetId });
 };

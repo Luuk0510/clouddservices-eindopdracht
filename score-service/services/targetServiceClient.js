@@ -19,6 +19,7 @@ function normalizeTarget(targetId, payload) {
     locationDescription: source.locationDescription || '',
     radiusMeters: source.radiusMeters || null,
     deadlineAt: source.deadlineAt || source.deadline,
+    createdAt: source.createdAt || null,
     status: source.status
   };
 }

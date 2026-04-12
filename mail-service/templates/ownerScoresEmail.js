@@ -19,7 +19,8 @@ module.exports = function buildOwnerScoresEmail(payload) {
       text.push(
         score.rank + '. ' +
         (score.userEmail || score.userId || 'unknown participant') +
-        ' - ' + score.similarityScore + '%'
+        ' - similarity ' + score.similarityScore + '%' +
+        (score.finalScore !== undefined && score.finalScore !== null ? ', final ' + score.finalScore : '')
       );
     });
   } else {
@@ -29,7 +30,9 @@ module.exports = function buildOwnerScoresEmail(payload) {
   var htmlRows = scores.map(function(score) {
     return '<li><strong>#' + score.rank + '</strong> ' +
       (score.userEmail || score.userId || 'unknown participant') +
-      ' - ' + score.similarityScore + '%</li>';
+      ' - similarity ' + score.similarityScore + '%' +
+      (score.finalScore !== undefined && score.finalScore !== null ? ', final ' + score.finalScore : '') +
+      '</li>';
   }).join('');
 
   var html = [

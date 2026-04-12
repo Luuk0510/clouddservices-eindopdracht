@@ -56,17 +56,6 @@ exports.sendRegistrationEmail = async function sendRegistrationEmail(payload) {
   });
 };
 
-exports.sendReminderEmail = async function sendReminderEmail(payload) {
-  var message = buildReminderEmail(payload);
-
-  return deliverMail({
-    to: payload.to,
-    subject: message.subject,
-    text: message.text,
-    html: message.html
-  });
-};
-
 exports.sendScoreEmail = async function sendScoreEmail(payload) {
   var message = buildScoreEmail(payload);
 
