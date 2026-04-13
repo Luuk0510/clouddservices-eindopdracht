@@ -83,6 +83,11 @@ Docker Swarm gebruikt images in plaats van `build:` uit Docker Compose. Bouw daa
 ```bash
 bash scripts/build-swarm-images.sh
 ```
+or 
+
+```bash
+.\scripts\build-swarm-images.ps1
+```
 
 Start Swarm als dat nog niet actief is:
 
