@@ -29,12 +29,35 @@ function subscribeToTargetCreated() {
   });
 }
 
+function subscribeToTargetDeleted() {
+  rabbitmq.subscribe(
+    'clock-service.target-deleted.v1',
+    'target.deleted.v1',
+    async function(message) {
+      await clockService.handleTargetDeletedEvent(message);
+    }
+  ).then(function() {
+    logger.info('rabbitmq.subscribed', {
+      queue: 'clock-service.target-deleted.v1',
+      routingKey: 'target.deleted.v1'
+    });
+  }).catch(function(error) {
+    logger.error('rabbitmq.subscribe_failed', {
+      message: error.message,
+      retryInMs: SUBSCRIBE_RETRY_DELAY_MS
+    });
+
+    setTimeout(subscribeToTargetDeleted, SUBSCRIBE_RETRY_DELAY_MS);
+  });
+}
+
 connectDatabase(env.mongoUri).then(function() {
   rabbitmq.connect().catch(function() {
     // connect mislukt - reconnect wordt intern afgehandeld door rabbitmq util
   });
 
   subscribeToTargetCreated();
+  subscribeToTargetDeleted();
   clockService.startPolling();
 
   var server = app.listen(env.port, function() {

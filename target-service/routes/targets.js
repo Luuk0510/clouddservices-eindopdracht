@@ -1,7 +1,7 @@
 var express = require('express');
 
 var Target = require('../models/Target');
-var Submission = require('../models/Submission');
+var Vote = require('../models/Vote');
 var authenticate = require('../middleware/authenticate');
 var authorizeRole = require('../middleware/authorizeRole');
 var rabbitmq = require('../utils/rabbitmq');
@@ -35,41 +35,21 @@ function parseCoordinates(latValue, lngValue) {
   };
 }
 
-function normalizeImageUrl(value) {
-  return String(value || '').trim();
-}
+async function buildVoteSummary(targetId) {
+  var thumbsUp = await Vote.countDocuments({
+    targetId: String(targetId),
+    vote: 'up'
+  });
+  var thumbsDown = await Vote.countDocuments({
+    targetId: String(targetId),
+    vote: 'down'
+  });
 
-function calculateSimilarityScore(targetUrl, submissionUrl) {
-  var a = normalizeImageUrl(targetUrl);
-  var b = normalizeImageUrl(submissionUrl);
-
-  if (!a || !b) {
-    return 0;
-  }
-
-  var aTokens = a.split(/[^a-z0-9]+/).filter(Boolean);
-  var bTokens = b.split(/[^a-z0-9]+/).filter(Boolean);
-  var seen = {};
-  var intersection = 0;
-
-  for (var i = 0; i < aTokens.length; i += 1) {
-    seen[aTokens[i]] = true;
-  }
-
-  for (var j = 0; j < bTokens.length; j += 1) {
-    if (seen[bTokens[j]]) {
-      intersection += 1;
-      seen[bTokens[j]] = false;
-    }
-  }
-
-  var union = aTokens.length + bTokens.length - intersection;
-
-  if (union <= 0) {
-    return 0;
-  }
-
-  return Math.round((intersection / union) * 100);
+  return {
+    targetId: String(targetId),
+    thumbsUp: thumbsUp,
+    thumbsDown: thumbsDown
+  };
 }
 
 router.get('/', async function(req, res) {
@@ -241,11 +221,74 @@ router.get('/:targetId', async function(req, res) {
     }
 
     res.status(200).json({
-      target: target
+      target: target,
+      votes: await buildVoteSummary(target._id)
     });
   } catch (error) {
     res.status(400).json({
       message: 'Failed to load target',
+      error: error.message
+    });
+  }
+});
+
+router.get('/:targetId/votes', async function(req, res) {
+  try {
+    var target = await Target.findById(req.params.targetId);
+
+    if (!target) {
+      return res.status(404).json({
+        message: 'Target not found'
+      });
+    }
+
+    res.status(200).json(await buildVoteSummary(target._id));
+  } catch (error) {
+    res.status(400).json({
+      message: 'Failed to load votes',
+      error: error.message
+    });
+  }
+});
+
+router.post('/:targetId/vote', authenticate, authorizeRole('participant'), async function(req, res) {
+  try {
+    var vote = String(req.body.vote || '').trim().toLowerCase();
+
+    if (vote !== 'up' && vote !== 'down') {
+      return res.status(400).json({
+        message: 'vote must be up or down'
+      });
+    }
+
+    var target = await Target.findById(req.params.targetId);
+
+    if (!target) {
+      return res.status(404).json({
+        message: 'Target not found'
+      });
+    }
+
+    await Vote.findOneAndUpdate({
+      targetId: String(target._id),
+      userId: req.auth.userId
+    }, {
+      $set: {
+        vote: vote
+      }
+    }, {
+      upsert: true,
+      setDefaultsOnInsert: true
+    });
+
+    res.status(200).json({
+      message: 'Vote saved',
+      vote: vote,
+      votes: await buildVoteSummary(target._id)
+    });
+  } catch (error) {
+    res.status(400).json({
+      message: 'Failed to save vote',
       error: error.message
     });
   }
@@ -307,12 +350,21 @@ router.delete('/:targetId', authenticate, authorizeRole('target-owner'), async f
       });
     }
 
-    await Submission.deleteMany({ targetId: target._id });
+    var targetId = String(target._id);
+
+    await Vote.deleteMany({ targetId: targetId });
     await Target.deleteOne({ _id: target._id });
+
+    rabbitmq.publish('target.deleted.v1', {
+      targetId: targetId,
+      ownerId: target.ownerId,
+      ownerEmail: target.ownerEmail,
+      deletedAt: new Date().toISOString()
+    });
 
     res.status(200).json({
       message: 'Target deleted',
-      targetId: target._id
+      targetId: targetId
     });
   } catch (error) {
     res.status(400).json({

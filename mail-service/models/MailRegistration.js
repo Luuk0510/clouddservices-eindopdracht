@@ -44,6 +44,19 @@ var mailRegistrationSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
+  submissionId: {
+    type: String,
+    default: null
+  },
+  similarityScore: {
+    type: Number,
+    default: null
+  },
+  submittedAt: {
+    type: Date,
+    default: null,
+    index: true
+  },
   status: {
     type: String,
     enum: ['active', 'cancelled'],

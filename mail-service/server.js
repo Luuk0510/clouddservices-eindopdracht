@@ -52,6 +52,28 @@ function subscribeToWinnerCalculated() {
   });
 }
 
+function subscribeToScoreCalculated() {
+  rabbitmq.subscribe(
+    'mail-service.score.calculated.v1',
+    'score.calculated.v1',
+    mailEventService.handleScoreCalculatedEvent
+  ).then(function() {
+    logger.info('rabbitmq.subscribed', {
+      queue: 'mail-service.score.calculated.v1',
+      routingKey: 'score.calculated.v1'
+    });
+  }).catch(function(error) {
+    logger.error('rabbitmq.subscribe_failed', {
+      queue: 'mail-service.score.calculated.v1',
+      routingKey: 'score.calculated.v1',
+      message: error.message,
+      retryInMs: SUBSCRIBE_RETRY_DELAY_MS
+    });
+
+    setTimeout(subscribeToScoreCalculated, SUBSCRIBE_RETRY_DELAY_MS);
+  });
+}
+
 function subscribeToDeadlineReminder() {
   rabbitmq.subscribe(
     'mail-service.clock.deadline-reminder.v1',
@@ -96,12 +118,36 @@ function subscribeToDeadlineReached() {
   });
 }
 
+function subscribeToTargetDeleted() {
+  rabbitmq.subscribe(
+    'mail-service.target-deleted.v1',
+    'target.deleted.v1',
+    mailEventService.handleTargetDeletedEvent
+  ).then(function() {
+    logger.info('rabbitmq.subscribed', {
+      queue: 'mail-service.target-deleted.v1',
+      routingKey: 'target.deleted.v1'
+    });
+  }).catch(function(error) {
+    logger.error('rabbitmq.subscribe_failed', {
+      queue: 'mail-service.target-deleted.v1',
+      routingKey: 'target.deleted.v1',
+      message: error.message,
+      retryInMs: SUBSCRIBE_RETRY_DELAY_MS
+    });
+
+    setTimeout(subscribeToTargetDeleted, SUBSCRIBE_RETRY_DELAY_MS);
+  });
+}
+
 connectDatabase(env.mongoUri).then(function() {
   rabbitmq.connect().then(function() {
     subscribeToRegistrationCreated();
+    subscribeToScoreCalculated();
     subscribeToWinnerCalculated();
     subscribeToDeadlineReminder();
     subscribeToDeadlineReached();
+    subscribeToTargetDeleted();
   }).catch(function() {
     // reconnect is handled in utils/rabbitmq
   });
