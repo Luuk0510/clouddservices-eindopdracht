@@ -149,6 +149,13 @@ docker swarm leave --force
 
 Schaal vooral stateless services zoals `photo-prestige`, `target-service`, `register-service`, `score-service`, `read-service` en `auth-service`. Laat databases, RabbitMQ en `clock-service` standaard op 1 replica.
 
+## Admin Process (Seed data)
+```bash
+docker compose run --rm auth-service npm run seed:owner
+```
+
+
+
 
 ---
 
