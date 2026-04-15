@@ -4,6 +4,12 @@ var URL = require('url').URL;
 
 var env = require('../config/env');
 
+var circuit = {
+  state: 'closed',
+  failures: 0,
+  openedAt: 0
+};
+
 var FORWARDED_QUERY_KEYS = [
   'city',
   'ownerId',
@@ -30,7 +36,52 @@ function buildTargetListUrl(query) {
   return url;
 }
 
-function requestJson(url) {
+function sleep(ms) {
+  return new Promise(function(resolve) {
+    setTimeout(resolve, ms);
+  });
+}
+
+function shouldShortCircuit() {
+  if (circuit.state !== 'open') {
+    return false;
+  }
+
+  if ((Date.now() - circuit.openedAt) >= env.circuitBreakerResetTimeoutMs) {
+    circuit.state = 'half-open';
+    return false;
+  }
+
+  return true;
+}
+
+function markSuccess() {
+  circuit.state = 'closed';
+  circuit.failures = 0;
+  circuit.openedAt = 0;
+}
+
+function markFailure() {
+  if (circuit.state === 'half-open') {
+    circuit.state = 'open';
+    circuit.failures = env.circuitBreakerThreshold;
+    circuit.openedAt = Date.now();
+    return;
+  }
+
+  circuit.failures += 1;
+
+  if (circuit.failures >= env.circuitBreakerThreshold) {
+    circuit.state = 'open';
+    circuit.openedAt = Date.now();
+  }
+}
+
+function isRetryableError(error) {
+  return !error.statusCode || error.statusCode >= 500;
+}
+
+function requestJsonOnce(url) {
   return new Promise(function(resolve, reject) {
     var transport = url.protocol === 'https:' ? https : http;
     var req = transport.request(url, {
@@ -83,6 +134,37 @@ function requestJson(url) {
 
     req.end();
   });
+}
+
+async function requestJson(url) {
+  if (shouldShortCircuit()) {
+    var circuitError = new Error('Target service circuit is open');
+    circuitError.statusCode = 503;
+    throw circuitError;
+  }
+
+  var attempts = circuit.state === 'half-open' ? 1 : env.retryAttempts;
+  var lastError;
+  var attempt;
+
+  for (attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      var payload = await requestJsonOnce(url);
+      markSuccess();
+      return payload;
+    } catch (error) {
+      lastError = error;
+      markFailure();
+
+      if (!isRetryableError(error) || attempt >= attempts) {
+        throw error;
+      }
+
+      await sleep(env.retryDelayMs);
+    }
+  }
+
+  throw lastError;
 }
 
 function normalizeContest(target) {

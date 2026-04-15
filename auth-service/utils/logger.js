@@ -3,6 +3,10 @@ var morgan = require('morgan');
 var serviceName = 'auth-service';
 
 function write(level, event, fields) {
+  if (process.env.NODE_ENV === 'test') {
+    return;
+  }
+
   var payload = Object.assign({
     timestamp: new Date().toISOString(),
     level: level,
@@ -30,6 +34,10 @@ exports.requestLogger = morgan(function(tokens, req, res) {
     responseTimeMs: Number(tokens['response-time'](req, res) || 0),
     contentLength: Number(tokens.res(req, res, 'content-length') || 0)
   });
+}, {
+  skip: function() {
+    return process.env.NODE_ENV === 'test';
+  }
 });
 
 exports.info = function info(event, fields) {

@@ -12,7 +12,11 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 app.get('/health', function(req, res) {
-  res.status(200).json({ status: 'ok' });
+  res.status(200).json({
+    status: 'ok',
+    version: 'v1',
+    service: 'score-service'
+  });
 });
 
 app.use(scoreRoutes);

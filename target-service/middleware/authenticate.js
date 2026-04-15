@@ -1,4 +1,5 @@
 var jwt = require('jsonwebtoken');
+var env = require('../config/env');
 
 module.exports = function authenticate(req, res, next) {
   try {
@@ -11,7 +12,7 @@ module.exports = function authenticate(req, res, next) {
     }
 
     var token = authHeader.slice(7);
-    var payload = jwt.verify(token, process.env.JWT_SECRET || 'dev-secret-change-me');
+    var payload = jwt.verify(token, env.jwtSecret);
 
     req.auth = payload;
     next();
