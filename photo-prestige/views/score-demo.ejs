@@ -6,17 +6,7 @@
   </head>
   <body>
     <main class="page">
-      <nav class="top-nav">
-        <a class="nav-link" href="/">Home</a>
-        <a class="nav-link" href="/auth-demo">Auth</a>
-        <a class="nav-link" href="/register-demo">Register</a>
-        <a class="nav-link active-link" href="/score-demo">Score</a>
-        <a class="nav-link" href="/target-demo">Target</a>
-        <a class="nav-link" href="/read-demo">Read</a>
-        <a class="nav-link" href="/clock-demo">Clock</a>
-        <a class="nav-link" href="/mail-demo">Mail</a>
-        <a class="nav-link" href="/api-docs">API Docs</a>
-      </nav>
+      <%- include('partials/nav', { activePage: 'score' }) %>
 
       <section class="hero">
         <h1><%= title %></h1>
@@ -86,50 +76,19 @@
       </section>
     </main>
 
+    <script src="/javascripts/demo-utils.js"></script>
     <script>
-      function showJson(elementId, payload) {
-        document.getElementById(elementId).textContent = JSON.stringify(payload, null, 2);
-      }
+      const utils = window.demoUtils;
+      const manualTokenId = 'score-token';
+      const showJson = utils.showJson;
+      const requestJson = utils.requestJson;
 
       function getToken() {
-        const manualToken = document.getElementById('score-token').value.trim();
-        return manualToken || localStorage.getItem('demo_jwt_token') || '';
-      }
-
-      function parseJwtPayload(token) {
-        try {
-          var parts = String(token || '').split('.');
-
-          if (parts.length < 2) {
-            return null;
-          }
-
-          var normalized = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-          var padded = normalized + '='.repeat((4 - normalized.length % 4) % 4);
-          return JSON.parse(atob(padded));
-        } catch (error) {
-          return null;
-        }
-      }
-
-      function getCurrentRole() {
-        var payload = parseJwtPayload(getToken());
-        return payload && payload.role ? payload.role : null;
+        return utils.getToken(manualTokenId);
       }
 
       function applyRoleVisibility() {
-        var role = getCurrentRole();
-        var restricted = document.querySelectorAll('[data-role-required]');
-
-        restricted.forEach(function(element) {
-          var required = String(element.getAttribute('data-role-required') || '')
-            .split(',')
-            .map(function(value) { return value.trim(); })
-            .filter(Boolean);
-
-          var allowed = role && required.indexOf(role) !== -1;
-          element.style.display = allowed ? '' : 'none';
-        });
+        utils.applyRoleVisibility(manualTokenId);
       }
 
       function getTargetId() {
@@ -145,57 +104,17 @@
       }
 
       function updateTokenView() {
-        const token = getToken();
-        if (!token) {
-          document.getElementById('current-score-token-result').textContent = 'Nog geen token gevonden.';
-          applyRoleVisibility();
-          return;
-        }
-
-        showJson('current-score-token-result', { token });
-        applyRoleVisibility();
-      }
-
-      async function requestJson(url, options) {
-        const response = await fetch(url, options);
-        const text = await response.text();
-
-        try {
-          return {
-            status: response.status,
-            ok: response.ok,
-            body: JSON.parse(text)
-          };
-        } catch (error) {
-          return {
-            status: response.status,
-            ok: response.ok,
-            body: text
-          };
-        }
+        utils.showToken('current-score-token-result', {
+          manualTokenId: manualTokenId,
+          emptyText: 'Nog geen token gevonden.'
+        });
       }
 
       function buildAuthHeaders() {
-        const token = getToken();
-        const headers = {
-          'Content-Type': 'application/json'
-        };
-
-        if (token) {
-          headers.Authorization = 'Bearer ' + token;
-        }
-
-        return headers;
+        return utils.buildAuthHeaders(manualTokenId);
       }
 
-      document.getElementById('score-health-button').addEventListener('click', async function() {
-        try {
-          const result = await requestJson('/api/v1/score/health', { method: 'GET' });
-          showJson('score-health-result', result);
-        } catch (error) {
-          showJson('score-health-result', { error: error.message });
-        }
-      });
+      utils.bindHealthCheck('score-health-button', 'score-health-result', '/api/v1/score/health');
 
       document.getElementById('create-submission-button').addEventListener('click', async function() {
         const targetId = getTargetId();
