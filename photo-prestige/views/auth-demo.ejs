@@ -65,48 +65,17 @@
       </section>
     </main>
 
+    <script src="/javascripts/demo-utils.js"></script>
     <script>
-      function showJson(elementId, payload) {
-        document.getElementById(elementId).textContent = JSON.stringify(payload, null, 2);
-      }
+      const utils = window.demoUtils;
+      const showJson = utils.showJson;
+      const requestJson = utils.requestJson;
 
       function updateStoredTokenView() {
-        const token = localStorage.getItem('demo_jwt_token');
-        if (!token) {
-          document.getElementById('token-result').textContent = 'Nog geen token opgeslagen.';
-          return;
-        }
-
-        showJson('token-result', { token });
+        utils.showToken('token-result', { emptyText: 'Nog geen token opgeslagen.' });
       }
 
-      async function requestJson(url, options) {
-        const response = await fetch(url, options);
-        const text = await response.text();
-
-        try {
-          return {
-            status: response.status,
-            ok: response.ok,
-            body: JSON.parse(text)
-          };
-        } catch (error) {
-          return {
-            status: response.status,
-            ok: response.ok,
-            body: text
-          };
-        }
-      }
-
-      document.getElementById('health-button').addEventListener('click', async function() {
-        try {
-          const result = await requestJson('/api/v1/health', { method: 'GET' });
-          showJson('health-result', result);
-        } catch (error) {
-          showJson('health-result', { error: error.message });
-        }
-      });
+      utils.bindHealthCheck('health-button', 'health-result', '/api/v1/health');
 
       document.getElementById('register-form').addEventListener('submit', async function(event) {
         event.preventDefault();
@@ -128,7 +97,7 @@
           });
 
           if (result.ok && result.body.token) {
-            localStorage.setItem('demo_jwt_token', result.body.token);
+            utils.setStoredToken(result.body.token);
             updateStoredTokenView();
           }
 
@@ -157,7 +126,7 @@
           });
 
           if (result.ok && result.body.token) {
-            localStorage.setItem('demo_jwt_token', result.body.token);
+            utils.setStoredToken(result.body.token);
             updateStoredTokenView();
           }
 
@@ -168,7 +137,7 @@
       });
 
       document.getElementById('clear-token-button').addEventListener('click', function() {
-        localStorage.removeItem('demo_jwt_token');
+        utils.clearStoredToken();
         updateStoredTokenView();
       });
 

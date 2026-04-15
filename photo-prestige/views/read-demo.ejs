@@ -38,52 +38,14 @@
       </section>
     </main>
 
+    <script src="/javascripts/demo-utils.js"></script>
     <script>
-      function showJson(elementId, payload) {
-        document.getElementById(elementId).textContent = JSON.stringify(payload, null, 2);
-      }
+      const utils = window.demoUtils;
+      const showJson = utils.showJson;
+      const requestJson = utils.requestJson;
+      const toQueryString = utils.toQueryString;
 
-      async function requestJson(url, options) {
-        const response = await fetch(url, options);
-        const text = await response.text();
-
-        try {
-          return {
-            status: response.status,
-            ok: response.ok,
-            body: JSON.parse(text)
-          };
-        } catch (error) {
-          return {
-            status: response.status,
-            ok: response.ok,
-            body: text
-          };
-        }
-      }
-
-      function toQueryString(values) {
-        const params = new URLSearchParams();
-
-        Object.keys(values).forEach(function(key) {
-          const value = String(values[key] || '').trim();
-          if (value) {
-            params.set(key, value);
-          }
-        });
-
-        const query = params.toString();
-        return query ? '?' + query : '';
-      }
-
-      document.getElementById('read-health-button').addEventListener('click', async function() {
-        try {
-          const result = await requestJson('/api/v1/read/health', { method: 'GET' });
-          showJson('read-health-result', result);
-        } catch (error) {
-          showJson('read-health-result', { error: error.message });
-        }
-      });
+      utils.bindHealthCheck('read-health-button', 'read-health-result', '/api/v1/read/health');
 
       document.getElementById('active-contests-form').addEventListener('submit', async function(event) {
         event.preventDefault();
