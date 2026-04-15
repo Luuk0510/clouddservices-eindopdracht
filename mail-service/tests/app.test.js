@@ -1,14 +1,5 @@
 var request = require('supertest');
-var jwt = require('jsonwebtoken');
 var app = require('../app');
-
-function createToken() {
-  return jwt.sign({
-    userId: 'user-123',
-    email: 'player@example.com',
-    role: 'participant'
-  }, 'dev-secret-change-me');
-}
 
 describe('mail-service app', function() {
   it('returns mail service health', async function() {

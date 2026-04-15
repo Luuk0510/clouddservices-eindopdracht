@@ -1,10 +1,11 @@
 var amqp = require('amqplib');
+var env = require('../config/env');
 
-var EXCHANGE = process.env.RABBITMQ_EXCHANGE || 'photo-prestige';
-var EXCHANGE_TYPE = 'topic';
-var RECONNECT_DELAY_MS = Number(process.env.RABBITMQ_RECONNECT_DELAY_MS || 5000);
+var EXCHANGE = env.rabbitmqExchange;
+var EXCHANGE_TYPE = env.rabbitmqExchangeType;
+var RECONNECT_DELAY_MS = env.rabbitmqReconnectDelayMs;
 
-var rabbitmqUrl = process.env.RABBITMQ_URL || 'amqp://guest:guest@rabbitmq:5672';
+var rabbitmqUrl = env.rabbitmqUrl;
 
 var _connection = null;
 var _channel = null;

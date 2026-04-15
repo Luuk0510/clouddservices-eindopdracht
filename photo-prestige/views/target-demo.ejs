@@ -6,17 +6,7 @@
   </head>
   <body>
     <main class="page">
-      <nav class="top-nav">
-        <a class="nav-link" href="/">Home</a>
-        <a class="nav-link" href="/auth-demo">Auth</a>
-        <a class="nav-link" href="/register-demo">Register</a>
-        <a class="nav-link" href="/score-demo">Score</a>
-        <a class="nav-link active-link" href="/target-demo">Target</a>
-        <a class="nav-link" href="/read-demo">Read</a>
-        <a class="nav-link" href="/clock-demo">Clock</a>
-        <a class="nav-link" href="/mail-demo">Mail</a>
-        <a class="nav-link" href="/api-docs">API Docs</a>
-      </nav>
+      <%- include('partials/nav', { activePage: 'target' }) %>
 
       <section class="hero">
         <h1><%= title %></h1>
@@ -124,103 +114,36 @@
       </section>
     </main>
 
+    <script src="/javascripts/demo-utils.js"></script>
     <script>
-      function showJson(elementId, payload) {
-        document.getElementById(elementId).textContent = JSON.stringify(payload, null, 2);
-      }
+      const utils = window.demoUtils;
+      const showJson = utils.showJson;
+      const requestJson = utils.requestJson;
 
       function getToken() {
-        return localStorage.getItem('demo_jwt_token') || '';
-      }
-
-      function parseJwtPayload(token) {
-        try {
-          var parts = String(token || '').split('.');
-
-          if (parts.length < 2) {
-            return null;
-          }
-
-          var normalized = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-          var padded = normalized + '='.repeat((4 - normalized.length % 4) % 4);
-          return JSON.parse(atob(padded));
-        } catch (error) {
-          return null;
-        }
-      }
-
-      function getCurrentRole() {
-        var payload = parseJwtPayload(getToken());
-        return payload && payload.role ? payload.role : null;
+        return utils.getToken();
       }
 
       function applyRoleVisibility() {
-        var role = getCurrentRole();
-        var restricted = document.querySelectorAll('[data-role-required]');
-
-        restricted.forEach(function(element) {
-          var required = String(element.getAttribute('data-role-required') || '')
-            .split(',')
-            .map(function(value) { return value.trim(); })
-            .filter(Boolean);
-
-          var allowed = role && required.indexOf(role) !== -1;
-          element.style.display = allowed ? '' : 'none';
-        });
+        utils.applyRoleVisibility();
       }
 
       function updateTokenView() {
-        const token = getToken();
-        if (!token) {
-          document.getElementById('token-result').textContent = 'Nog geen token gevonden. Login eerst op de Auth pagina.';
-          applyRoleVisibility();
-          return;
-        }
-        showJson('token-result', { token });
-        applyRoleVisibility();
-      }
-
-      async function requestJson(url, options) {
-        const response = await fetch(url, options);
-        const text = await response.text();
-
-        try {
-          return {
-            status: response.status,
-            ok: response.ok,
-            body: JSON.parse(text)
-          };
-        } catch (error) {
-          return {
-            status: response.status,
-            ok: response.ok,
-            body: text
-          };
-        }
+        utils.showToken('token-result', {
+          emptyText: 'Nog geen token gevonden. Login eerst op de Auth pagina.'
+        });
       }
 
       function buildAuthHeaders() {
-        const token = getToken();
-        const headers = { 'Content-Type': 'application/json' };
-        if (token) {
-          headers.Authorization = 'Bearer ' + token;
-        }
-        return headers;
+        return utils.buildAuthHeaders();
       }
 
       document.getElementById('clear-token-button').addEventListener('click', function() {
-        localStorage.removeItem('demo_jwt_token');
+        utils.clearStoredToken();
         updateTokenView();
       });
 
-      document.getElementById('target-health-button').addEventListener('click', async function() {
-        try {
-          const result = await requestJson('/api/v1/targets/health', { method: 'GET' });
-          showJson('target-health-result', result);
-        } catch (error) {
-          showJson('target-health-result', { error: error.message });
-        }
-      });
+      utils.bindHealthCheck('target-health-button', 'target-health-result', '/api/v1/targets/health');
 
       document.getElementById('targets-list-form').addEventListener('submit', async function(event) {
         event.preventDefault();

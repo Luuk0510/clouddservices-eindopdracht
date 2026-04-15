@@ -1,0 +1,18 @@
+<%
+  const links = [
+    { key: 'home', label: 'Home', href: '/' },
+    { key: 'auth', label: 'Auth', href: '/auth-demo' },
+    { key: 'register', label: 'Register', href: '/register-demo' },
+    { key: 'score', label: 'Score', href: '/score-demo' },
+    { key: 'target', label: 'Target', href: '/target-demo' },
+    { key: 'read', label: 'Read', href: '/read-demo' },
+    { key: 'clock', label: 'Clock', href: '/clock-demo' },
+    { key: 'mail', label: 'Mail', href: '/mail-demo' },
+    { key: 'api-docs', label: 'API Docs', href: '/api-docs' }
+  ];
+%>
+<nav class="top-nav">
+  <% links.forEach(function(link) { %>
+    <a class="nav-link<%= activePage === link.key ? ' active-link' : '' %>" href="<%= link.href %>"><%= link.label %></a>
+  <% }); %>
+</nav>
